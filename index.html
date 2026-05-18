@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f0c29" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Bang Kee Tour" />
+  <title>Bang Kee Tour</title>
+
+  <!-- PWA Manifest inline -->
+  <script>
+    const manifestData = {
+      name: "Bang Kee Tour",
+      short_name: "BKT",
+      start_url: ".",
+      display: "standalone",
+      background_color: "#0f0c29",
+      theme_color: "#0f0c29",
+      icons: [
+        { src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23302b63'/><text y='.9em' font-size='80' x='10'>✈️</text></svg>", sizes: "192x192", type: "image/svg+xml" }
+      ]
+    };
+    const blob = new Blob([JSON.stringify(manifestData)], { type: "application/json" });
+    const manifestURL = URL.createObjectURL(blob);
+    document.write(`<link rel="manifest" href="${manifestURL}">`);
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=Prompt:wght@600;700&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: linear-gradient(160deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+      --card: rgba(255,255,255,0.07);
+      --card-border: rgba(255,255,255,0.1);
+      --text: #ffffff;
+      --text-dim: rgba(255,255,255,0.5);
+      --accent: #667eea;
+      --accent2: #764ba2;
+      --yellow: #FFEAA7;
+      --green: #4ECDC4;
+      --red: #FF6B6B;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+    }
+    input, select, button { font-family: inherit; outline: none; }
+    button { cursor: pointer; border: none; transition: all 0.18s; }
+    button:active { transform: scale(0.96); }
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+    /* Header */
+    #header {
+      background: rgba(0,0,0,0.35);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: calc(var(--safe-top) + 12px) 16px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    #header .logo { display: flex; align-items: center; gap: 10px; }
+    #header .logo-icon { font-size: 26px; }
+    #header .logo-title { font-family: 'Prompt', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+    #header .logo-sub { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+
+    /* Screens */
+    #app { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+    .screen { display: none; flex: 1; overflow-y: auto; padding: 16px 16px calc(var(--safe-bottom) + 80px); }
+    .screen.active { display: block; }
+
+    /* Cards */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 12px;
+      backdrop-filter: blur(10px);
+    }
+    .label { font-size: 12px; color: var(--text-dim); display: block; margin-bottom: 8px; }
+    .input {
+      width: 100%; background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 10px; padding: 12px 14px;
+      color: var(--text); font-size: 15px; font-family: 'Sarabun', sans-serif;
+    }
+    .input::placeholder { color: rgba(255,255,255,0.3); }
+    .input:focus { border-color: rgba(255,255,255,0.3); }
+
+    /* Buttons */
+    .btn-primary {
+      width: 100%; background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; padding: 15px; border-radius: 14px;
+      font-size: 16px; font-weight: 700; letter-spacing: 0.3px;
+    }
+    .btn-outline {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #fff; padding: 8px 16px; border-radius: 10px; font-size: 14px;
+    }
+    .btn-summary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; padding: 8px 16px; border-radius: 10px;
+      font-size: 14px; font-weight: 600;
+    }
+
+    /* Member tags */
+    .member-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .member-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;
+    }
+    .member-tag .dot { font-size: 10px; }
+    .member-tag .remove {
+      cursor: pointer; color: rgba(255,255,255,0.4); font-size: 17px;
+      line-height: 1; background: none; border: none; padding: 0;
+    }
+
+    /* Add member row */
+    .add-member-row { display: flex; gap: 8px; }
+    .add-member-row .input { flex: 1; }
+    .add-member-row .btn-add {
+      background: linear-gradient(135deg, #4facfe, #00f2fe);
+      color: #fff; width: 44px; height: 44px; border-radius: 10px;
+      font-size: 24px; font-weight: 700; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Stats */
+    .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+    .stat-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; padding: 14px; text-align: center; }
+    .stat-value { font-size: 20px; font-weight: 700; }
+    .stat-label { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
+
+    /* Expense item */
+    .expense-item {
+      background: var(--card); border: 1px solid var(--card-border);
+      border-radius: 14px; padding: 14px; margin-bottom: 10px;
+      animation: fadeUp 0.3s ease;
+    }
+    .expense-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .expense-desc { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+    .expense-meta { font-size: 12px; color: var(--text-dim); display: flex; gap: 10px; flex-wrap: wrap; }
+    .expense-amount { font-size: 19px; font-weight: 700; color: var(--yellow); white-space: nowrap; }
+    .expense-per { font-size: 11px; color: var(--text-dim); text-align: right; margin-top: 2px; }
+    .btn-delete {
+      font-size: 11px; margin-top: 6px; background: rgba(255,80,80,0.12);
+      border: 1px solid rgba(255,80,80,0.2); color: var(--red);
+      padding: 3px 9px; border-radius: 6px;
+    }
+    .expense-splits { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+    .split-tag {
+      font-size: 11px; padding: 2px 9px; border-radius: 12px;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .payer-tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 600;
+    }
+
+    /* FAB */
+    #fab {
+      position: fixed;
+      bottom: calc(var(--safe-bottom) + 20px);
+      right: 20px;
+      width: 58px; height: 58px; border-radius: 29px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; font-size: 30px; font-weight: 300;
+      box-shadow: 0 6px 24px rgba(102,126,234,0.5);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 50; display: none;
+    }
+
+    /* Modal */
+    #modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65); backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 100; display: none; align-items: flex-end; justify-content: center;
+    }
+    #modal-overlay.open { display: flex; }
+    #modal {
+      width: 100%; max-width: 480px;
+      background: linear-gradient(180deg, #1a1a2e, #16213e);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px 20px 0 0;
+      padding: 20px 20px calc(var(--safe-bottom) + 20px);
+      max-height: 92dvh; overflow-y: auto;
+      animation: slideUp 0.3s ease;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+    .modal-title { font-size: 17px; font-weight: 700; }
+    .btn-close {
+      background: rgba(255,255,255,0.1); color: #fff;
+      width: 30px; height: 30px; border-radius: 15px; font-size: 18px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .selector-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .selector-btn {
+      padding: 8px 13px; border-radius: 10px; font-size: 14px;
+      background: rgba(255,255,255,0.06);
+      border: 1.5px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.7);
+      font-family: 'Sarabun', sans-serif; cursor: pointer; transition: all 0.15s;
+    }
+    .selector-btn.selected { font-weight: 700; }
+
+    /* Summary */
+    .person-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .person-row:last-child { border-bottom: none; }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px; flex-shrink: 0;
+      border: 2px solid;
+    }
+    .transfer-row {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .transfer-row:last-child { border-bottom: none; }
+    .chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+    .transfer-amt { font-weight: 700; color: var(--yellow); font-size: 15px; }
+    .dim { font-size: 12px; color: var(--text-dim); }
+
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-dim); }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideUp { from { transform: translateY(60px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <div class="logo">
+    <span class="logo-icon">✈️</span>
+    <div>
+      <div class="logo-title">Bang Kee Tour</div>
+      <div class="logo-sub" id="trip-name-header"></div>
+    </div>
+  </div>
+  <div id="header-actions"></div>
+</div>
+
+<div id="app">
+  <!-- SETUP -->
+  <div class="screen active" id="screen-setup">
+    <div style="text-align:center; padding: 24px 0 28px;">
+      <div style="font-size:60px; margin-bottom:12px;">🌍</div>
+      <h1 style="font-family:'Prompt',sans-serif; font-size:26px; font-weight:700; line-height:1.3; margin-bottom:8px;">จัดการค่าใช้จ่าย<br>การเที่ยว</h1>
+      <p style="color:var(--text-dim); font-size:14px;">แชร์ค่าใช้จ่ายง่ายๆ กับเพื่อนในทริป</p>
+    </div>
+
+    <div class="card">
+      <label class="label">🗺️ ชื่อทริป</label>
+      <input class="input" id="trip-name-input" placeholder="เช่น เที่ยวญี่ปุ่น 2025" />
+    </div>
+
+    <div class="card">
+      <label class="label">👥 สมาชิกในทริป (<span id="member-count">0</span> คน)</label>
+      <div class="add-member-row" style="margin-bottom:10px;">
+        <input class="input" id="member-input" placeholder="ชื่อ..." />
+        <button class="btn-add" onclick="addMember()">+</button>
+      </div>
+      <div class="member-list" id="member-list">
+        <div style="color:rgba(255,255,255,0.3); font-size:13px;">ยังไม่มีสมาชิก...</div>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="start-btn" onclick="startTrip()" style="opacity:0.4;">
+      เริ่มทริป 🚀
+    </button>
+    <p style="text-align:center; color:var(--text-dim); font-size:12px; margin-top:8px;" id="start-hint">ต้องมีสมาชิกอย่างน้อย 2 คน</p>
+  </div>
+
+  <!-- EXPENSES -->
+  <div class="screen" id="screen-expenses">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-total" style="color:var(--green);">฿0.00</div>
+        <div class="stat-label">ยอดรวมทั้งหมด</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-count" style="color:var(--red);">0</div>
+        <div class="stat-label">รายการ</div>
+      </div>
+    </div>
+    <div id="expense-list"></div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="screen" id="screen-summary">
+    <h2 style="font-family:'Prompt',sans-serif; font-size:20px; font-weight:700; margin-bottom:16px;">📊 สรุปค่าใช้จ่าย</h2>
+    <div class="card" id="summary-balance">
+      <div class="label" style="margin-bottom:14px;">ยอดของแต่ละคน</div>
+    </div>
+    <div class="card" id="summary-transfers">
+      <div class="label" style="margin-bottom:14px;">💸 สรุปการโอนเงิน</div>
+    </div>
+    <div class="card" style="text-align:center; background:rgba(102,126,234,0.1); border-color:rgba(102,126,234,0.3);">
+      <div style="font-size:13px; color:var(--text-dim); margin-bottom:4px;">ยอดรวมทั้งทริป</div>
+      <div id="summary-total" style="font-size:28px; font-weight:700; color:var(--yellow);">฿0.00</div>
+    </div>
+  </div>
+</div>
+
+<!-- FAB -->
+<button id="fab" onclick="openForm()">+</button>
+
+<!-- MODAL -->
+<div id="modal-overlay" onclick="closeModalOutside(event)">
+  <div id="modal">
+    <div class="modal-header">
+      <div class="modal-title">➕ เพิ่มรายการ</div>
+      <button class="btn-close" onclick="closeModal()">×</button>
+    </div>
+
+    <div style="margin-bottom:13px;">
+      <label class="label">📝 รายการ</label>
+      <input class="input" id="f-desc" placeholder="เช่น ข้าวเที่ยง, ตั๋วเครื่องบิน" />
+    </div>
+    <div style="margin-bottom:13px;">
+      <label class="label">📍 สถานที่</label>
+      <input class="input" id="f-loc" placeholder="เช่น Osaka, สนามบินสุวรรณภูมิ" />
+    </div>
+    <div class="grid2" style="margin-bottom:13px;">
+      <div>
+        <label class="label">💰 จำนวนเงิน (฿)</label>
+        <input class="input" id="f-amount" type="number" placeholder="0.00" oninput="updatePerPerson()" />
+      </div>
+      <div>
+        <label class="label">📅 วันที่</label>
+        <input class="input" id="f-date" type="date" />
+      </div>
+    </div>
+    <div style="margin-bottom:13px;">
+      <label class="label">👤 คนจ่าย</label>
+      <div class="selector-row" id="payer-selector"></div>
+    </div>
+    <div style="margin-bottom:20px;">
+      <label class="label" id="split-label">👥 แบ่งจ่ายกับ</label>
+      <div class="selector-row" id="split-selector"></div>
+    </div>
+
+    <button class="btn-primary" onclick="saveExpense()">บันทึกรายการ ✓</button>
+  </div>
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────
+  const COLORS = ["#FF6B6B","#4ECDC4","#45B7D1","#96CEB4","#FFEAA7","#DDA0DD","#98D8C8","#F7DC6F","#BB8FCE","#85C1E9"];
+  let state = loadState();
+
+  function loadState() {
+    try {
+      const s = localStorage.getItem("bkt_state");
+      return s ? JSON.parse(s) : { tripName:"", members:[], expenses:[], screen:"setup" };
+    } catch { return { tripName:"", members:[], expenses:[], screen:"setup" }; }
+  }
+  function saveState() { localStorage.setItem("bkt_state", JSON.stringify(state)); }
+
+  const color = (m) => COLORS[state.members.indexOf(m) % COLORS.length];
+  const fmt = (n) => `฿${Math.abs(n).toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+
+  // ── Screen routing ─────────────────────────────────────────
+  function showScreen(name) {
+    state.screen = name;
+    saveState();
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    document.getElementById("screen-" + name).classList.add("active");
+    document.getElementById("fab").style.display = name === "expenses" ? "flex" : "none";
+
+    const ha = document.getElementById("header-actions");
+    const sub = document.getElementById("trip-name-header");
+    sub.textContent = name !== "setup" ? state.tripName : "";
+
+    if (name === "expenses") {
+      ha.innerHTML = `<button class="btn-summary" onclick="showScreen('summary')">สรุป 📊</button>`;
+      renderExpenses();
+    } else if (name === "summary") {
+      ha.innerHTML = `<button class="btn-outline" onclick="showScreen('expenses')">← กลับ</button>`;
+      renderSummary();
+    } else {
+      ha.innerHTML = "";
+    }
+  }
+
+  // ── Setup ──────────────────────────────────────────────────
+  function addMember() {
+    const inp = document.getElementById("member-input");
+    const name = inp.value.trim();
+    if (name && !state.members.includes(name)) {
+      state.members.push(name);
+      saveState();
+      inp.value = "";
+      renderMemberList();
+    }
+  }
+  document.getElementById("member-input").addEventListener("keydown", e => { if (e.key === "Enter") addMember(); });
+
+  function removeMember(m) {
+    state.members = state.members.filter(x => x !== m);
+    saveState();
+    renderMemberList();
+  }
+
+  function renderMemberList() {
+    const list = document.getElementById("member-list");
+    const count = document.getElementById("member-count");
+    const btn = document.getElementById("start-btn");
+    const hint = document.getElementById("start-hint");
+    count.textContent = state.members.length;
+    if (state.members.length === 0) {
+      list.innerHTML = `<div style="color:rgba(255,255,255,0.3);font-size:13px;">ยังไม่มีสมาชิก...</div>`;
+    } else {
+      list.innerHTML = state.members.map(m => `
+        <div class="member-tag" style="background:${color(m)}22;border:1px solid ${color(m)}44;">
+          <span class="dot" style="color:${color(m)}">●</span>
+          <span>${m}</span>
+          <button class="remove" onclick="removeMember('${m}')">×</button>
+        </div>`).join("");
+    }
+    const ready = state.members.length >= 2 && document.getElementById("trip-name-input").value.trim();
+    btn.style.opacity = ready ? "1" : "0.4";
+    hint.style.display = state.members.length >= 2 ? "none" : "block";
+  }
+
+  function startTrip() {
+    const name = document.getElementById("trip-name-input").value.trim();
+    if (!name || state.members.length < 2) return;
+    state.tripName = name;
+    saveState();
+    showScreen("expenses");
+  }
+  document.getElementById("trip-name-input").addEventListener("input", renderMemberList);
+
+  // ── Expenses ───────────────────────────────────────────────
+  function renderExpenses() {
+    const total = state.expenses.reduce((s,e)=>s+e.amount,0);
+    document.getElementById("stat-total").textContent = fmt(total);
+    document.getElementById("stat-count").textContent = state.expenses.length;
+
+    const list = document.getElementById("expense-list");
+    if (state.expenses.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div class="empty-icon">🧾</div><div>ยังไม่มีรายการ<br>กดปุ่ม + เพื่อเพิ่ม</div></div>`;
+      return;
+    }
+    list.innerHTML = [...state.expenses].reverse().map(e => {
+      const c = color(e.payer);
+      const splits = e.splitWith.map(m => `
+        <span class="split-tag" style="background:${color(m)}1A;border:1px solid ${color(m)}33;">
+          <span style="color:${color(m)};font-size:9px;">●</span>
+          <span style="color:rgba(255,255,255,0.75)">${m}</span>
+        </span>`).join("");
+      return `
+        <div class="expense-item">
+          <div class="expense-top">
+            <div>
+              <div class="expense-desc">${e.description}</div>
+              <div class="expense-meta">
+                ${e.location ? `<span>📍 ${e.location}</span>` : ""}
+                <span>📅 ${e.date}</span>
+              </div>
+              <div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <div class="payer-tag" style="background:${c}22;border:1px solid ${c}44;">
+                  <span style="color:${c};font-size:10px;">●</span>
+                  <span style="color:#fff;font-size:12px;">${e.payer} จ่าย</span>
+                </div>
+                <span style="font-size:12px;color:var(--text-dim);">แบ่ง ${e.splitWith.length} คน</span>
+              </div>
+            </div>
+            <div>
+              <div class="expense-amount">${fmt(e.amount)}</div>
+              <div class="expense-per">${fmt(e.amount/e.splitWith.length)}/คน</div>
+              <button class="btn-delete" onclick="deleteExpense(${e.id})">ลบ</button>
+            </div>
+          </div>
+          <div class="expense-splits">${splits}</div>
+        </div>`;
+    }).join("");
+  }
+
+  function deleteExpense(id) {
+    state.expenses = state.expenses.filter(e => e.id !== id);
+    saveState();
+    renderExpenses();
+  }
+
+  // ── Modal ──────────────────────────────────────────────────
+  let formState = { payer: "", splitWith: [] };
+
+  function openForm() {
+    formState.payer = state.members[0] || "";
+    formState.splitWith = [...state.members];
+    document.getElementById("f-desc").value = "";
+    document.getElementById("f-loc").value = "";
+    document.getElementById("f-amount").value = "";
+    document.getElementById("f-date").value = new Date().toISOString().split("T")[0];
+    renderPayerSelector();
+    renderSplitSelector();
+    document.getElementById("modal-overlay").classList.add("open");
+  }
+
+  function closeModal() { document.getElementById("modal-overlay").classList.remove("open"); }
+  function closeModalOutside(e) { if (e.target.id === "modal-overlay") closeModal(); }
+
+  function renderPayerSelector() {
+    document.getElementById("payer-selector").innerHTML = state.members.map(m => {
+      const sel = formState.payer === m;
+      const c = color(m);
+      return `<button class="selector-btn ${sel?'selected':''}" 
+        style="${sel?`background:${c}22;border-color:${c};color:${c};`:''}"
+        onclick="setPayer('${m}')">${m}</button>`;
+    }).join("");
+  }
+
+  function renderSplitSelector() {
+    const amt = parseFloat(document.getElementById("f-amount").value)||0;
+    const n = formState.splitWith.length;
+    const perLabel = amt && n > 0 ? ` · ${fmt(amt/n)}/คน` : "";
+    document.getElementById("split-label").textContent = `👥 แบ่งจ่ายกับ (${n} คน${perLabel})`;
+    document.getElementById("split-selector").innerHTML = state.members.map(m => {
+      const sel = formState.splitWith.includes(m);
+      const c = color(m);
+      return `<button class="selector-btn ${sel?'selected':''}"
+        style="${sel?`background:${c}22;border-color:${c};color:${c};`:''}"
+        onclick="toggleSplit('${m}')">${sel?'✓ ':''}${m}</button>`;
+    }).join("");
+  }
+
+  function setPayer(m) { formState.payer = m; renderPayerSelector(); }
+  function toggleSplit(m) {
+    if (formState.splitWith.includes(m)) formState.splitWith = formState.splitWith.filter(x=>x!==m);
+    else formState.splitWith.push(m);
+    renderSplitSelector();
+  }
+  function updatePerPerson() { renderSplitSelector(); }
+
+  function saveExpense() {
+    const desc = document.getElementById("f-desc").value.trim();
+    const amt = parseFloat(document.getElementById("f-amount").value);
+    if (!desc || !amt || formState.splitWith.length === 0) {
+      alert("กรุณากรอกรายการ, จำนวนเงิน และเลือกคนแบ่งจ่าย");
+      return;
+    }
+    state.expenses.push({
+      id: Date.now(),
+      description: desc,
+      location: document.getElementById("f-loc").value.trim(),
+      amount: amt,
+      date: document.getElementById("f-date").value,
+      payer: formState.payer,
+      splitWith: [...formState.splitWith],
+    });
+    saveState();
+    closeModal();
+    renderExpenses();
+  }
+
+  // ── Summary ────────────────────────────────────────────────
+  function calcSettlement() {
+    const balance = {};
+    state.members.forEach(m => balance[m] = 0);
+    state.expenses.forEach(({payer, amount, splitWith}) => {
+      if (!splitWith.length) return;
+      const share = amount / splitWith.length;
+      balance[payer] += amount;
+      splitWith.forEach(m => balance[m] -= share);
+    });
+    const creditors = [], debtors = [];
+    Object.entries(balance).forEach(([name, amt]) => {
+      if (amt > 0.005) creditors.push({name, amt});
+      else if (amt < -0.005) debtors.push({name, amt: -amt});
+    });
+    const txs = [];
+    const cred = creditors.map(x=>({...x})), debt = debtors.map(x=>({...x}));
+    let ci=0, di=0;
+    while (ci < cred.length && di < debt.length) {
+      const c=cred[ci], d=debt[di], amt=Math.min(c.amt, d.amt);
+      txs.push({from:d.name, to:c.name, amount:amt});
+      c.amt -= amt; d.amt -= amt;
+      if (c.amt < 0.005) ci++;
+      if (d.amt < 0.005) di++;
+    }
+    return {balance, txs};
+  }
+
+  function renderSummary() {
+    const {balance, txs} = calcSettlement();
+    const total = state.expenses.reduce((s,e)=>s+e.amount,0);
+    document.getElementById("summary-total").textContent = fmt(total);
+
+    const balEl = document.getElementById("summary-balance");
+    balEl.innerHTML = `<div class="label" style="margin-bottom:14px;">ยอดของแต่ละคน</div>` +
+      state.members.map(m => {
+        const paid = state.expenses.filter(e=>e.payer===m).reduce((s,e)=>s+e.amount,0);
+        const owe = state.expenses.reduce((s,e)=>e.splitWith.includes(m)?s+e.amount/e.splitWith.length:s,0);
+        const net = balance[m];
+        const c = color(m);
+        return `<div class="person-row">
+          <div class="avatar" style="background:${c}22;border-color:${c};color:${c};">${m[0]}</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;margin-bottom:2px;">${m}</div>
+            <div style="font-size:12px;color:var(--text-dim);">จ่าย ${fmt(paid)} · ควรจ่าย ${fmt(owe)}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-weight:700;font-size:16px;color:${net>=0?'var(--green)':'var(--red)'}">
+              ${net>=0?'+'+fmt(net):'-'+fmt(-net)}
+            </div>
+            <div style="font-size:11px;color:var(--text-dim);">${net>=0?'ได้คืน':'ต้องจ่าย'}</div>
+          </div>
+        </div>`;
+      }).join("");
+
+    const txEl = document.getElementById("summary-transfers");
+    txEl.innerHTML = `<div class="label" style="margin-bottom:14px;">💸 สรุปการโอนเงิน</div>` +
+      (txs.length === 0
+        ? `<div style="text-align:center;padding:16px 0;color:var(--text-dim);">🎉 ไม่มีการโอน ทุกคนจ่ายเท่ากัน!</div>`
+        : txs.map(t => `
+          <div class="transfer-row">
+            <div class="chip" style="background:${color(t.from)}22;border:1px solid ${color(t.from)}33;">
+              <span style="color:${color(t.from)};font-size:9px;">●</span>${t.from}
+            </div>
+            <span class="dim">โอน</span>
+            <span class="transfer-amt">${fmt(t.amount)}</span>
+            <span class="dim">ให้</span>
+            <div class="chip" style="background:${color(t.to)}22;border:1px solid ${color(t.to)}33;">
+              <span style="color:${color(t.to)};font-size:9px;">●</span>${t.to}
+            </div>
+          </div>`).join(""));
+  }
+
+  // ── Service Worker ─────────────────────────────────────────
+  if ("serviceWorker" in navigator) {
+    const sw = `
+      const CACHE = "bkt-v1";
+      self.addEventListener("install", e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(["/"]))));
+      self.addEventListener("fetch", e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));
+    `;
+    const blob = new Blob([sw], {type:"text/javascript"});
+    navigator.serviceWorker.register(URL.createObjectURL(blob));
+  }
+
+  // ── Init ───────────────────────────────────────────────────
+  if (state.tripName) document.getElementById("trip-name-input").value = state.tripName;
+  renderMemberList();
+  showScreen(state.screen || "setup");
+</script>
+</body>
+</html>
