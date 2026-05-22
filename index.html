@@ -22,14 +22,13 @@
 
     // ✏️ แก้ตรงนี้ด้วย config จาก Firebase Console ของคุณ
     const firebaseConfig = {
-      apiKey: "AIzaSyB5pa7_GsVGWBKZxBVLX82CLbftgjt8jio",
-      authDomain: "bung-kee-tour.firebaseapp.com",
-      databaseURL: "https://bung-kee-tour-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "bung-kee-tour",
-      storageBucket: "bung-kee-tour.firebasestorage.app",
-      messagingSenderId: "603611862111",
-      appId: "1:603611862111:web:980cc43d99b3a566f977ea",
-      measurementId: "G-GHGR73S4D4"  
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -153,6 +152,8 @@
       renderNewMembers();
     }
     function renderNewMembers() {
+      const lbl = q("new-member-lbl");
+      if (lbl) lbl.textContent = "👥 สมาชิก (" + newTripMembers.length + " คน)";
       q("new-members-list").innerHTML = newTripMembers.map((m,i) =>
         `<div class="tag" style="background:${COLORS[i%COLORS.length]}33;border:1px solid ${COLORS[i%COLORS.length]}55">
           <span style="color:${COLORS[i%COLORS.length]}">●</span>${esc(m)}
@@ -450,8 +451,8 @@
       </div>
 
       <!-- Create Trip Modal -->
-      <div id="create-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.75);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:none;align-items:flex-end;z-index:200">
-        <div id="create-modal-bg" style="position:absolute;inset:0"></div>
+      <div id="create-modal" class="modal-overlay">
+        <div id="create-modal-bg" style="position:absolute;inset:0;cursor:pointer"></div>
         <div style="position:relative;width:100%;max-width:480px;margin:0 auto;max-height:90vh;overflow-y:auto;background:linear-gradient(180deg,#1a1a2e,#16213e);border-top:1px solid rgba(255,255,255,0.1);border-radius:20px 20px 0 0;padding:24px 20px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));animation:slideUp 0.3s ease">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
             <h3 style="font-size:18px;font-weight:700">🗺️ สร้างทริปใหม่</h3>
@@ -508,7 +509,7 @@
       </div>
 
       <!-- Summary Panel -->
-      <div id="summary-panel" style="position:fixed;inset:0;background:rgba(0,0,0,0.75);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:none;align-items:flex-end;z-index:200">
+      <div id="summary-panel" class="modal-overlay">
         <div style="width:100%;max-width:480px;margin:0 auto;max-height:90vh;overflow-y:auto;background:linear-gradient(180deg,#1a1a2e,#16213e);border-top:1px solid rgba(255,255,255,0.1);border-radius:20px 20px 0 0;padding:24px 20px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));animation:slideUp 0.3s ease">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
             <h3 style="font-size:18px;font-weight:700">📊 สรุปค่าใช้จ่าย</h3>
@@ -530,7 +531,7 @@
       </div>
 
       <!-- Expense Form Modal -->
-      <div id="exp-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.75);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:none;align-items:flex-end;z-index:200">
+      <div id="exp-modal" class="modal-overlay">
         <div style="width:100%;max-width:480px;margin:0 auto;max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:linear-gradient(180deg,#1a1a2e,#16213e);border-top:1px solid rgba(255,255,255,0.1);border-radius:20px 20px 0 0;padding:24px 20px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));animation:slideUp 0.3s ease">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
             <h3 id="form-title" style="font-size:18px;font-weight:700">➕ เพิ่มรายการ</h3>
@@ -574,8 +575,8 @@
       .empty-state{padding:40px;text-align:center;}
       .trip-card{padding:16px;margin-bottom:12px;cursor:pointer;transition:all 0.15s;}
       .trip-card:active{opacity:0.8;transform:scale(0.99);}
-      #summary-panel,#exp-modal,#create-modal{display:none;align-items:flex-end;}
-      #summary-panel.open,#exp-modal.open,#create-modal.open{display:flex;}
+      .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);align-items:flex-end;z-index:200;}
+      .modal-overlay.open{display:flex;}
       .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(40,40,80,0.95);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;opacity:0;transition:all 0.3s;pointer-events:none;z-index:999;white-space:nowrap;}
       .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
     </style>`;
