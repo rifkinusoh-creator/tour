@@ -3,668 +3,585 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0f0c29" />
+  <title>Bang Kee Tour</title>
+  <meta name="theme-color" content="#302b63" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Bang Kee Tour" />
-  <title>Bang Kee Tour</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=Prompt:wght@400;600;700&display=swap" rel="stylesheet" />
 
-  <!-- PWA Manifest inline -->
-  <script>
-    const manifestData = {
-      name: "Bang Kee Tour",
-      short_name: "BKT",
-      start_url: ".",
-      display: "standalone",
-      background_color: "#0f0c29",
-      theme_color: "#0f0c29",
-      icons: [
-        { src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23302b63'/><text y='.9em' font-size='80' x='10'>✈️</text></svg>", sizes: "192x192", type: "image/svg+xml" }
-      ]
+  <!-- ============================================================
+       🔥 STEP 1: ใส่ Firebase Config ของคุณตรงนี้
+       ไปที่ Firebase Console > Project Settings > Your Apps > Config
+       ============================================================ -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, set, get, push, update, remove, onValue, off }
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+    // ✏️ แก้ตรงนี้ด้วย config จาก Firebase Console ของคุณ
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
     };
-    const blob = new Blob([JSON.stringify(manifestData)], { type: "application/json" });
-    const manifestURL = URL.createObjectURL(blob);
-    document.write(`<link rel="manifest" href="${manifestURL}">`);
-  </script>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=Prompt:wght@600;700&display=swap" rel="stylesheet">
+    const app = initializeApp(firebaseConfig);
+    const db  = getDatabase(app);
 
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg: linear-gradient(160deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-      --card: rgba(255,255,255,0.07);
-      --card-border: rgba(255,255,255,0.1);
-      --text: #ffffff;
-      --text-dim: rgba(255,255,255,0.5);
-      --accent: #667eea;
-      --accent2: #764ba2;
-      --yellow: #FFEAA7;
-      --green: #4ECDC4;
-      --red: #FF6B6B;
-      --safe-top: env(safe-area-inset-top, 0px);
-      --safe-bottom: env(safe-area-inset-bottom, 0px);
-    }
-    html, body { height: 100%; overflow: hidden; }
-    body {
-      font-family: 'Sarabun', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      flex-direction: column;
-      height: 100dvh;
-    }
-    input, select, button { font-family: inherit; outline: none; }
-    button { cursor: pointer; border: none; transition: all 0.18s; }
-    button:active { transform: scale(0.96); }
-    ::-webkit-scrollbar { width: 3px; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+    // ─── helpers ─────────────────────────────────────────────────
+    const COLORS = ["#FF6B6B","#4ECDC4","#45B7D1","#96CEB4","#FFEAA7",
+                    "#DDA0DD","#98D8C8","#F7DC6F","#BB8FCE","#85C1E9"];
 
-    /* Header */
-    #header {
-      background: rgba(0,0,0,0.35);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      padding: calc(var(--safe-top) + 12px) 16px 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-      z-index: 10;
-    }
-    #header .logo { display: flex; align-items: center; gap: 10px; }
-    #header .logo-icon { font-size: 26px; }
-    #header .logo-title { font-family: 'Prompt', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
-    #header .logo-sub { font-size: 11px; color: var(--text-dim); margin-top: 1px; }
+    let members = [];
+    const color  = m => COLORS[members.indexOf(m) % COLORS.length] || COLORS[0];
+    const fmt    = n => "฿" + Math.abs(n).toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+    const esc    = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const escA   = s => String(s).replace(/"/g,"&quot;");
+    const q      = id => document.getElementById(id);
+    const today  = () => new Date().toISOString().split("T")[0];
 
-    /* Screens */
-    #app { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
-    .screen { display: none; flex: 1; overflow-y: auto; padding: 16px 16px calc(var(--safe-bottom) + 80px); }
-    .screen.active { display: block; }
+    // ─── state ───────────────────────────────────────────────────
+    let currentTripId   = null;   // key ใน Firebase
+    let currentTripData = null;   // {name, members, createdAt}
+    let currentExpenses = {};     // {expenseId: {...}}
+    let editingExpId    = null;   // กำลังแก้ไข expense ใด
+    let unsubExpenses   = null;   // listener
 
-    /* Cards */
-    .card {
-      background: var(--card);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 18px;
-      margin-bottom: 12px;
-      backdrop-filter: blur(10px);
+    // ─── router (hash-based) ─────────────────────────────────────
+    function route() {
+      const hash = location.hash; // #trip/TRIPID
+      if (hash.startsWith("#trip/")) {
+        const tid = hash.slice(6);
+        openTrip(tid);
+      } else {
+        showHomeScreen();
+      }
     }
-    .label { font-size: 12px; color: var(--text-dim); display: block; margin-bottom: 8px; }
-    .input {
-      width: 100%; background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.13);
-      border-radius: 10px; padding: 12px 14px;
-      color: var(--text); font-size: 15px; font-family: 'Sarabun', sans-serif;
-    }
-    .input::placeholder { color: rgba(255,255,255,0.3); }
-    .input:focus { border-color: rgba(255,255,255,0.3); }
+    window.addEventListener("hashchange", route);
 
-    /* Buttons */
-    .btn-primary {
-      width: 100%; background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: #fff; padding: 15px; border-radius: 14px;
-      font-size: 16px; font-weight: 700; letter-spacing: 0.3px;
-    }
-    .btn-outline {
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.15);
-      color: #fff; padding: 8px 16px; border-radius: 10px; font-size: 14px;
-    }
-    .btn-summary {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: #fff; padding: 8px 16px; border-radius: 10px;
-      font-size: 14px; font-weight: 600;
+    // ════════════════════════════════════════════════════════════
+    //  HOME — รายการทริปทั้งหมด
+    // ════════════════════════════════════════════════════════════
+    async function showHomeScreen() {
+      if (unsubExpenses) { off(ref(db, `trips/${currentTripId}/expenses`)); unsubExpenses = null; }
+      currentTripId = null; currentTripData = null; members = [];
+      renderShell("home");
+      loadTrips();
     }
 
-    /* Member tags */
-    .member-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-    .member-tag {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;
-    }
-    .member-tag .dot { font-size: 10px; }
-    .member-tag .remove {
-      cursor: pointer; color: rgba(255,255,255,0.4); font-size: 17px;
-      line-height: 1; background: none; border: none; padding: 0;
-    }
-
-    /* Add member row */
-    .add-member-row { display: flex; gap: 8px; }
-    .add-member-row .input { flex: 1; }
-    .add-member-row .btn-add {
-      background: linear-gradient(135deg, #4facfe, #00f2fe);
-      color: #fff; width: 44px; height: 44px; border-radius: 10px;
-      font-size: 24px; font-weight: 700; flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
-    }
-
-    /* Stats */
-    .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
-    .stat-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; padding: 14px; text-align: center; }
-    .stat-value { font-size: 20px; font-weight: 700; }
-    .stat-label { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
-
-    /* Expense item */
-    .expense-item {
-      background: var(--card); border: 1px solid var(--card-border);
-      border-radius: 14px; padding: 14px; margin-bottom: 10px;
-      animation: fadeUp 0.3s ease;
-    }
-    .expense-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-    .expense-desc { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
-    .expense-meta { font-size: 12px; color: var(--text-dim); display: flex; gap: 10px; flex-wrap: wrap; }
-    .expense-amount { font-size: 19px; font-weight: 700; color: var(--yellow); white-space: nowrap; }
-    .expense-per { font-size: 11px; color: var(--text-dim); text-align: right; margin-top: 2px; }
-    .btn-delete {
-      font-size: 11px; margin-top: 6px; background: rgba(255,80,80,0.12);
-      border: 1px solid rgba(255,80,80,0.2); color: var(--red);
-      padding: 3px 9px; border-radius: 6px;
-    }
-    .expense-splits { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
-    .split-tag {
-      font-size: 11px; padding: 2px 9px; border-radius: 12px;
-      display: inline-flex; align-items: center; gap: 4px;
-    }
-    .payer-tag {
-      display: inline-flex; align-items: center; gap: 5px;
-      padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 600;
-    }
-
-    /* FAB */
-    #fab {
-      position: fixed;
-      bottom: calc(var(--safe-bottom) + 20px);
-      right: 20px;
-      width: 58px; height: 58px; border-radius: 29px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: #fff; font-size: 30px; font-weight: 300;
-      box-shadow: 0 6px 24px rgba(102,126,234,0.5);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 50; display: none;
-    }
-
-    /* Modal */
-    #modal-overlay {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.65); backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      z-index: 100; display: none; align-items: flex-end; justify-content: center;
-    }
-    #modal-overlay.open { display: flex; }
-    #modal {
-      width: 100%; max-width: 480px;
-      background: linear-gradient(180deg, #1a1a2e, #16213e);
-      border-top: 1px solid rgba(255,255,255,0.1);
-      border-radius: 20px 20px 0 0;
-      padding: 20px 20px calc(var(--safe-bottom) + 20px);
-      max-height: 92dvh; overflow-y: auto;
-      animation: slideUp 0.3s ease;
-    }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
-    .modal-title { font-size: 17px; font-weight: 700; }
-    .btn-close {
-      background: rgba(255,255,255,0.1); color: #fff;
-      width: 30px; height: 30px; border-radius: 15px; font-size: 18px;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .selector-row { display: flex; flex-wrap: wrap; gap: 8px; }
-    .selector-btn {
-      padding: 8px 13px; border-radius: 10px; font-size: 14px;
-      background: rgba(255,255,255,0.06);
-      border: 1.5px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.7);
-      font-family: 'Sarabun', sans-serif; cursor: pointer; transition: all 0.15s;
-    }
-    .selector-btn.selected { font-weight: 700; }
-
-    /* Summary */
-    .person-row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-    .person-row:last-child { border-bottom: none; }
-    .avatar {
-      width: 36px; height: 36px; border-radius: 18px;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 14px; flex-shrink: 0;
-      border: 2px solid;
-    }
-    .transfer-row {
-      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-      padding: 11px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-    .transfer-row:last-child { border-bottom: none; }
-    .chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 8px; font-size: 13px; font-weight: 600; }
-    .transfer-amt { font-weight: 700; color: var(--yellow); font-size: 15px; }
-    .dim { font-size: 12px; color: var(--text-dim); }
-
-    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-dim); }
-    .empty-icon { font-size: 48px; margin-bottom: 12px; }
-
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes slideUp { from { transform: translateY(60px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-  </style>
-</head>
-<body>
-
-<div id="header">
-  <div class="logo">
-    <span class="logo-icon">✈️</span>
-    <div>
-      <div class="logo-title">Bang Kee Tour</div>
-      <div class="logo-sub" id="trip-name-header"></div>
-    </div>
-  </div>
-  <div id="header-actions"></div>
-</div>
-
-<div id="app">
-  <!-- SETUP -->
-  <div class="screen active" id="screen-setup">
-    <div style="text-align:center; padding: 24px 0 28px;">
-      <div style="font-size:60px; margin-bottom:12px;">🌍</div>
-      <h1 style="font-family:'Prompt',sans-serif; font-size:26px; font-weight:700; line-height:1.3; margin-bottom:8px;">จัดการค่าใช้จ่าย<br>การเที่ยว</h1>
-      <p style="color:var(--text-dim); font-size:14px;">แชร์ค่าใช้จ่ายง่ายๆ กับเพื่อนในทริป</p>
-    </div>
-
-    <div class="card">
-      <label class="label">🗺️ ชื่อทริป</label>
-      <input class="input" id="trip-name-input" placeholder="เช่น เที่ยวญี่ปุ่น 2025" />
-    </div>
-
-    <div class="card">
-      <label class="label">👥 สมาชิกในทริป (<span id="member-count">0</span> คน)</label>
-      <div class="add-member-row" style="margin-bottom:10px;">
-        <input class="input" id="member-input" placeholder="ชื่อ..." />
-        <button class="btn-add" onclick="addMember()">+</button>
-      </div>
-      <div class="member-list" id="member-list">
-        <div style="color:rgba(255,255,255,0.3); font-size:13px;">ยังไม่มีสมาชิก...</div>
-      </div>
-    </div>
-
-    <button class="btn-primary" id="start-btn" onclick="startTrip()" style="opacity:0.4;">
-      เริ่มทริป 🚀
-    </button>
-    <p style="text-align:center; color:var(--text-dim); font-size:12px; margin-top:8px;" id="start-hint">ต้องมีสมาชิกอย่างน้อย 2 คน</p>
-  </div>
-
-  <!-- EXPENSES -->
-  <div class="screen" id="screen-expenses">
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-value" id="stat-total" style="color:var(--green);">฿0.00</div>
-        <div class="stat-label">ยอดรวมทั้งหมด</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="stat-count" style="color:var(--red);">0</div>
-        <div class="stat-label">รายการ</div>
-      </div>
-    </div>
-    <div id="expense-list"></div>
-  </div>
-
-  <!-- SUMMARY -->
-  <div class="screen" id="screen-summary">
-    <h2 style="font-family:'Prompt',sans-serif; font-size:20px; font-weight:700; margin-bottom:16px;">📊 สรุปค่าใช้จ่าย</h2>
-    <div class="card" id="summary-balance">
-      <div class="label" style="margin-bottom:14px;">ยอดของแต่ละคน</div>
-    </div>
-    <div class="card" id="summary-transfers">
-      <div class="label" style="margin-bottom:14px;">💸 สรุปการโอนเงิน</div>
-    </div>
-    <div class="card" style="text-align:center; background:rgba(102,126,234,0.1); border-color:rgba(102,126,234,0.3);">
-      <div style="font-size:13px; color:var(--text-dim); margin-bottom:4px;">ยอดรวมทั้งทริป</div>
-      <div id="summary-total" style="font-size:28px; font-weight:700; color:var(--yellow);">฿0.00</div>
-    </div>
-  </div>
-</div>
-
-<!-- FAB -->
-<button id="fab" onclick="openForm()">+</button>
-
-<!-- MODAL -->
-<div id="modal-overlay" onclick="closeModalOutside(event)">
-  <div id="modal">
-    <div class="modal-header">
-      <div class="modal-title">➕ เพิ่มรายการ</div>
-      <button class="btn-close" onclick="closeModal()">×</button>
-    </div>
-
-    <div style="margin-bottom:13px;">
-      <label class="label">📝 รายการ</label>
-      <input class="input" id="f-desc" placeholder="เช่น ข้าวเที่ยง, ตั๋วเครื่องบิน" />
-    </div>
-    <div style="margin-bottom:13px;">
-      <label class="label">📍 สถานที่</label>
-      <input class="input" id="f-loc" placeholder="เช่น Osaka, สนามบินสุวรรณภูมิ" />
-    </div>
-    <div class="grid2" style="margin-bottom:13px;">
-      <div>
-        <label class="label">💰 จำนวนเงิน (฿)</label>
-        <input class="input" id="f-amount" type="number" placeholder="0.00" oninput="updatePerPerson()" />
-      </div>
-      <div>
-        <label class="label">📅 วันที่</label>
-        <input class="input" id="f-date" type="date" />
-      </div>
-    </div>
-    <div style="margin-bottom:13px;">
-      <label class="label">👤 คนจ่าย</label>
-      <div class="selector-row" id="payer-selector"></div>
-    </div>
-    <div style="margin-bottom:20px;">
-      <label class="label" id="split-label">👥 แบ่งจ่ายกับ</label>
-      <div class="selector-row" id="split-selector"></div>
-    </div>
-
-    <button class="btn-primary" onclick="saveExpense()">บันทึกรายการ ✓</button>
-  </div>
-</div>
-
-<script>
-  // ── State ──────────────────────────────────────────────────
-  const COLORS = ["#FF6B6B","#4ECDC4","#45B7D1","#96CEB4","#FFEAA7","#DDA0DD","#98D8C8","#F7DC6F","#BB8FCE","#85C1E9"];
-  let state = loadState();
-
-  function loadState() {
-    try {
-      const s = localStorage.getItem("bkt_state");
-      return s ? JSON.parse(s) : { tripName:"", members:[], expenses:[], screen:"setup" };
-    } catch { return { tripName:"", members:[], expenses:[], screen:"setup" }; }
-  }
-  function saveState() { localStorage.setItem("bkt_state", JSON.stringify(state)); }
-
-  const color = (m) => COLORS[state.members.indexOf(m) % COLORS.length];
-  const fmt = (n) => `฿${Math.abs(n).toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2})}`;
-
-  // ── Screen routing ─────────────────────────────────────────
-  function showScreen(name) {
-    state.screen = name;
-    saveState();
-    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-    document.getElementById("screen-" + name).classList.add("active");
-    document.getElementById("fab").style.display = name === "expenses" ? "flex" : "none";
-
-    const ha = document.getElementById("header-actions");
-    const sub = document.getElementById("trip-name-header");
-    sub.textContent = name !== "setup" ? state.tripName : "";
-
-    if (name === "expenses") {
-      ha.innerHTML = `<button class="btn-summary" onclick="showScreen('summary')">สรุป 📊</button>`;
-      renderExpenses();
-    } else if (name === "summary") {
-      ha.innerHTML = `<button class="btn-outline" onclick="showScreen('expenses')">← กลับ</button>`;
-      renderSummary();
-    } else {
-      ha.innerHTML = "";
-    }
-  }
-
-  // ── Setup ──────────────────────────────────────────────────
-  function addMember() {
-    const inp = document.getElementById("member-input");
-    const name = inp.value.trim();
-    if (name && !state.members.includes(name)) {
-      state.members.push(name);
-      saveState();
-      inp.value = "";
-      renderMemberList();
-    }
-  }
-  document.getElementById("member-input").addEventListener("keydown", e => { if (e.key === "Enter") addMember(); });
-
-  function removeMember(m) {
-    state.members = state.members.filter(x => x !== m);
-    saveState();
-    renderMemberList();
-  }
-
-  function renderMemberList() {
-    const list = document.getElementById("member-list");
-    const count = document.getElementById("member-count");
-    const btn = document.getElementById("start-btn");
-    const hint = document.getElementById("start-hint");
-    count.textContent = state.members.length;
-    if (state.members.length === 0) {
-      list.innerHTML = `<div style="color:rgba(255,255,255,0.3);font-size:13px;">ยังไม่มีสมาชิก...</div>`;
-    } else {
-      list.innerHTML = state.members.map(m => `
-        <div class="member-tag" style="background:${color(m)}22;border:1px solid ${color(m)}44;">
-          <span class="dot" style="color:${color(m)}">●</span>
-          <span>${m}</span>
-          <button class="remove" onclick="removeMember('${m}')">×</button>
-        </div>`).join("");
-    }
-    const ready = state.members.length >= 2 && document.getElementById("trip-name-input").value.trim();
-    btn.style.opacity = ready ? "1" : "0.4";
-    hint.style.display = state.members.length >= 2 ? "none" : "block";
-  }
-
-  function startTrip() {
-    const name = document.getElementById("trip-name-input").value.trim();
-    if (!name || state.members.length < 2) return;
-    state.tripName = name;
-    saveState();
-    showScreen("expenses");
-  }
-  document.getElementById("trip-name-input").addEventListener("input", renderMemberList);
-
-  // ── Expenses ───────────────────────────────────────────────
-  function renderExpenses() {
-    const total = state.expenses.reduce((s,e)=>s+e.amount,0);
-    document.getElementById("stat-total").textContent = fmt(total);
-    document.getElementById("stat-count").textContent = state.expenses.length;
-
-    const list = document.getElementById("expense-list");
-    if (state.expenses.length === 0) {
-      list.innerHTML = `<div class="empty-state"><div class="empty-icon">🧾</div><div>ยังไม่มีรายการ<br>กดปุ่ม + เพื่อเพิ่ม</div></div>`;
-      return;
-    }
-    list.innerHTML = [...state.expenses].reverse().map(e => {
-      const c = color(e.payer);
-      const splits = e.splitWith.map(m => `
-        <span class="split-tag" style="background:${color(m)}1A;border:1px solid ${color(m)}33;">
-          <span style="color:${color(m)};font-size:9px;">●</span>
-          <span style="color:rgba(255,255,255,0.75)">${m}</span>
-        </span>`).join("");
-      return `
-        <div class="expense-item">
-          <div class="expense-top">
-            <div>
-              <div class="expense-desc">${e.description}</div>
-              <div class="expense-meta">
-                ${e.location ? `<span>📍 ${e.location}</span>` : ""}
-                <span>📅 ${e.date}</span>
-              </div>
-              <div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                <div class="payer-tag" style="background:${c}22;border:1px solid ${c}44;">
-                  <span style="color:${c};font-size:10px;">●</span>
-                  <span style="color:#fff;font-size:12px;">${e.payer} จ่าย</span>
-                </div>
-                <span style="font-size:12px;color:var(--text-dim);">แบ่ง ${e.splitWith.length} คน</span>
+    async function loadTrips() {
+      const snap = await get(ref(db, "trips"));
+      const trips = snap.val() || {};
+      const list  = q("trip-list");
+      const keys  = Object.keys(trips).sort((a,b) => (trips[b].createdAt||0)-(trips[a].createdAt||0));
+      if (keys.length === 0) {
+        list.innerHTML = `<div class="empty-state"><div style="font-size:48px;margin-bottom:12px">🗺️</div><div style="color:rgba(255,255,255,0.5)">ยังไม่มีทริป<br>สร้างทริปแรกได้เลย!</div></div>`;
+        return;
+      }
+      list.innerHTML = keys.map(k => {
+        const t = trips[k];
+        const mems = t.members ? Object.values(t.members) : [];
+        const date = t.createdAt ? new Date(t.createdAt).toLocaleDateString("th-TH") : "";
+        return `<div class="card trip-card" data-id="${escA(k)}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div style="flex:1">
+              <div style="font-weight:700;font-size:17px;margin-bottom:4px">${esc(t.name)}</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:8px">📅 ${date} &nbsp;·&nbsp; 👥 ${mems.length} คน</div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px">
+                ${mems.slice(0,5).map(m=>`<span class="tag" style="background:${memberColorByName(m,mems)}33;border:1px solid ${memberColorByName(m,mems)}55;font-size:12px;padding:2px 8px"><span style="color:${memberColorByName(m,mems)}">●</span> ${esc(m)}</span>`).join("")}
+                ${mems.length>5?`<span class="tag" style="background:rgba(255,255,255,0.1);font-size:12px">+${mems.length-5}</span>`:""}
               </div>
             </div>
-            <div>
-              <div class="expense-amount">${fmt(e.amount)}</div>
-              <div class="expense-per">${fmt(e.amount/e.splitWith.length)}/คน</div>
-              <button class="btn-delete" onclick="deleteExpense(${e.id})">ลบ</button>
+            <div style="text-align:right;flex-shrink:0;margin-left:12px">
+              <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:6px">แตะเพื่อเปิด</div>
+              <button class="del-trip-btn" data-id="${escA(k)}" style="background:rgba(255,80,80,0.15);border:1px solid rgba(255,80,80,0.25);color:#FF6B6B;font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:inherit">ลบ</button>
             </div>
-          </div>
-          <div class="expense-splits">${splits}</div>
-        </div>`;
-    }).join("");
-  }
-
-  function deleteExpense(id) {
-    state.expenses = state.expenses.filter(e => e.id !== id);
-    saveState();
-    renderExpenses();
-  }
-
-  // ── Modal ──────────────────────────────────────────────────
-  let formState = { payer: "", splitWith: [] };
-
-  function openForm() {
-    formState.payer = state.members[0] || "";
-    formState.splitWith = [...state.members];
-    document.getElementById("f-desc").value = "";
-    document.getElementById("f-loc").value = "";
-    document.getElementById("f-amount").value = "";
-    document.getElementById("f-date").value = new Date().toISOString().split("T")[0];
-    renderPayerSelector();
-    renderSplitSelector();
-    document.getElementById("modal-overlay").classList.add("open");
-  }
-
-  function closeModal() { document.getElementById("modal-overlay").classList.remove("open"); }
-  function closeModalOutside(e) { if (e.target.id === "modal-overlay") closeModal(); }
-
-  function renderPayerSelector() {
-    document.getElementById("payer-selector").innerHTML = state.members.map(m => {
-      const sel = formState.payer === m;
-      const c = color(m);
-      return `<button class="selector-btn ${sel?'selected':''}" 
-        style="${sel?`background:${c}22;border-color:${c};color:${c};`:''}"
-        onclick="setPayer('${m}')">${m}</button>`;
-    }).join("");
-  }
-
-  function renderSplitSelector() {
-    const amt = parseFloat(document.getElementById("f-amount").value)||0;
-    const n = formState.splitWith.length;
-    const perLabel = amt && n > 0 ? ` · ${fmt(amt/n)}/คน` : "";
-    document.getElementById("split-label").textContent = `👥 แบ่งจ่ายกับ (${n} คน${perLabel})`;
-    document.getElementById("split-selector").innerHTML = state.members.map(m => {
-      const sel = formState.splitWith.includes(m);
-      const c = color(m);
-      return `<button class="selector-btn ${sel?'selected':''}"
-        style="${sel?`background:${c}22;border-color:${c};color:${c};`:''}"
-        onclick="toggleSplit('${m}')">${sel?'✓ ':''}${m}</button>`;
-    }).join("");
-  }
-
-  function setPayer(m) { formState.payer = m; renderPayerSelector(); }
-  function toggleSplit(m) {
-    if (formState.splitWith.includes(m)) formState.splitWith = formState.splitWith.filter(x=>x!==m);
-    else formState.splitWith.push(m);
-    renderSplitSelector();
-  }
-  function updatePerPerson() { renderSplitSelector(); }
-
-  function saveExpense() {
-    const desc = document.getElementById("f-desc").value.trim();
-    const amt = parseFloat(document.getElementById("f-amount").value);
-    if (!desc || !amt || formState.splitWith.length === 0) {
-      alert("กรุณากรอกรายการ, จำนวนเงิน และเลือกคนแบ่งจ่าย");
-      return;
-    }
-    state.expenses.push({
-      id: Date.now(),
-      description: desc,
-      location: document.getElementById("f-loc").value.trim(),
-      amount: amt,
-      date: document.getElementById("f-date").value,
-      payer: formState.payer,
-      splitWith: [...formState.splitWith],
-    });
-    saveState();
-    closeModal();
-    renderExpenses();
-  }
-
-  // ── Summary ────────────────────────────────────────────────
-  function calcSettlement() {
-    const balance = {};
-    state.members.forEach(m => balance[m] = 0);
-    state.expenses.forEach(({payer, amount, splitWith}) => {
-      if (!splitWith.length) return;
-      const share = amount / splitWith.length;
-      balance[payer] += amount;
-      splitWith.forEach(m => balance[m] -= share);
-    });
-    const creditors = [], debtors = [];
-    Object.entries(balance).forEach(([name, amt]) => {
-      if (amt > 0.005) creditors.push({name, amt});
-      else if (amt < -0.005) debtors.push({name, amt: -amt});
-    });
-    const txs = [];
-    const cred = creditors.map(x=>({...x})), debt = debtors.map(x=>({...x}));
-    let ci=0, di=0;
-    while (ci < cred.length && di < debt.length) {
-      const c=cred[ci], d=debt[di], amt=Math.min(c.amt, d.amt);
-      txs.push({from:d.name, to:c.name, amount:amt});
-      c.amt -= amt; d.amt -= amt;
-      if (c.amt < 0.005) ci++;
-      if (d.amt < 0.005) di++;
-    }
-    return {balance, txs};
-  }
-
-  function renderSummary() {
-    const {balance, txs} = calcSettlement();
-    const total = state.expenses.reduce((s,e)=>s+e.amount,0);
-    document.getElementById("summary-total").textContent = fmt(total);
-
-    const balEl = document.getElementById("summary-balance");
-    balEl.innerHTML = `<div class="label" style="margin-bottom:14px;">ยอดของแต่ละคน</div>` +
-      state.members.map(m => {
-        const paid = state.expenses.filter(e=>e.payer===m).reduce((s,e)=>s+e.amount,0);
-        const owe = state.expenses.reduce((s,e)=>e.splitWith.includes(m)?s+e.amount/e.splitWith.length:s,0);
-        const net = balance[m];
-        const c = color(m);
-        return `<div class="person-row">
-          <div class="avatar" style="background:${c}22;border-color:${c};color:${c};">${m[0]}</div>
-          <div style="flex:1;">
-            <div style="font-weight:600;margin-bottom:2px;">${m}</div>
-            <div style="font-size:12px;color:var(--text-dim);">จ่าย ${fmt(paid)} · ควรจ่าย ${fmt(owe)}</div>
-          </div>
-          <div style="text-align:right;">
-            <div style="font-weight:700;font-size:16px;color:${net>=0?'var(--green)':'var(--red)'}">
-              ${net>=0?'+'+fmt(net):'-'+fmt(-net)}
-            </div>
-            <div style="font-size:11px;color:var(--text-dim);">${net>=0?'ได้คืน':'ต้องจ่าย'}</div>
           </div>
         </div>`;
       }).join("");
 
-    const txEl = document.getElementById("summary-transfers");
-    txEl.innerHTML = `<div class="label" style="margin-bottom:14px;">💸 สรุปการโอนเงิน</div>` +
-      (txs.length === 0
-        ? `<div style="text-align:center;padding:16px 0;color:var(--text-dim);">🎉 ไม่มีการโอน ทุกคนจ่ายเท่ากัน!</div>`
-        : txs.map(t => `
-          <div class="transfer-row">
-            <div class="chip" style="background:${color(t.from)}22;border:1px solid ${color(t.from)}33;">
-              <span style="color:${color(t.from)};font-size:9px;">●</span>${t.from}
-            </div>
-            <span class="dim">โอน</span>
-            <span class="transfer-amt">${fmt(t.amount)}</span>
-            <span class="dim">ให้</span>
-            <div class="chip" style="background:${color(t.to)}22;border:1px solid ${color(t.to)}33;">
-              <span style="color:${color(t.to)};font-size:9px;">●</span>${t.to}
-            </div>
-          </div>`).join(""));
-  }
+      list.querySelectorAll(".trip-card").forEach(el => {
+        el.addEventListener("click", e => {
+          if (e.target.classList.contains("del-trip-btn")) return;
+          location.hash = "#trip/" + el.dataset.id;
+        });
+      });
+      list.querySelectorAll(".del-trip-btn").forEach(btn => {
+        btn.addEventListener("click", e => { e.stopPropagation(); confirmDeleteTrip(btn.dataset.id); });
+      });
+    }
 
-  // ── Service Worker ─────────────────────────────────────────
-  if ("serviceWorker" in navigator) {
-    const sw = `
-      const CACHE = "bkt-v1";
-      self.addEventListener("install", e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(["/"]))));
-      self.addEventListener("fetch", e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));
-    `;
-    const blob = new Blob([sw], {type:"text/javascript"});
-    navigator.serviceWorker.register(URL.createObjectURL(blob));
-  }
+    function memberColorByName(m, arr) { return COLORS[arr.indexOf(m) % COLORS.length] || COLORS[0]; }
 
-  // ── Init ───────────────────────────────────────────────────
-  if (state.tripName) document.getElementById("trip-name-input").value = state.tripName;
-  renderMemberList();
-  showScreen(state.screen || "setup");
-</script>
-</body>
+    async function confirmDeleteTrip(id) {
+      if (!confirm("ลบทริปนี้?")) return;
+      await remove(ref(db, `trips/${id}`));
+      loadTrips();
+      toast("ลบทริปแล้ว");
+    }
+
+    // ─── create trip ─────────────────────────────────────────────
+    function bindCreateTrip() {
+      q("create-trip-btn").addEventListener("click", () => {
+        q("create-modal").classList.add("open");
+        q("new-trip-name").value = "";
+        q("new-members-list").innerHTML = "";
+        q("new-member-input").value = "";
+        newTripMembers = [];
+      });
+      q("create-modal-close").addEventListener("click",  () => q("create-modal").classList.remove("open"));
+      q("create-modal-bg").addEventListener("click",     () => q("create-modal").classList.remove("open"));
+      q("new-member-add-btn").addEventListener("click",  addNewMember);
+      q("new-member-input").addEventListener("keydown",  e => { if(e.key==="Enter"){e.preventDefault();addNewMember();} });
+      q("save-trip-btn").addEventListener("click",       saveNewTrip);
+    }
+
+    let newTripMembers = [];
+    function addNewMember() {
+      const n = q("new-member-input").value.trim();
+      if (!n) return;
+      if (newTripMembers.includes(n)) { toast("มีชื่อนี้แล้ว"); return; }
+      newTripMembers.push(n);
+      q("new-member-input").value = "";
+      renderNewMembers();
+    }
+    function renderNewMembers() {
+      q("new-members-list").innerHTML = newTripMembers.map((m,i) =>
+        `<div class="tag" style="background:${COLORS[i%COLORS.length]}33;border:1px solid ${COLORS[i%COLORS.length]}55">
+          <span style="color:${COLORS[i%COLORS.length]}">●</span>${esc(m)}
+          <span data-rm="${escA(m)}" style="cursor:pointer;color:rgba(255,255,255,0.4);font-size:18px;line-height:1">×</span>
+        </div>`
+      ).join("");
+      q("new-members-list").querySelectorAll("[data-rm]").forEach(el =>
+        el.addEventListener("click", function(){ newTripMembers=newTripMembers.filter(x=>x!==this.dataset.rm); renderNewMembers(); })
+      );
+    }
+
+    async function saveNewTrip() {
+      const name = q("new-trip-name").value.trim();
+      if (!name) { toast("กรุณาใส่ชื่อทริป"); return; }
+      if (newTripMembers.length < 2) { toast("ต้องมีสมาชิกอย่างน้อย 2 คน"); return; }
+      const tripRef  = push(ref(db, "trips"));
+      const membObj  = {};
+      newTripMembers.forEach((m, i) => membObj[`m${i}`] = m);
+      await set(tripRef, { name, members: membObj, createdAt: Date.now() });
+      q("create-modal").classList.remove("open");
+      toast("สร้างทริปแล้ว 🎉");
+      location.hash = "#trip/" + tripRef.key;
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  TRIP — หน้ารายการในทริป
+    // ════════════════════════════════════════════════════════════
+    async function openTrip(id) {
+      const snap = await get(ref(db, `trips/${id}`));
+      if (!snap.exists()) { toast("ไม่พบทริปนี้"); location.hash = ""; return; }
+      currentTripId   = id;
+      currentTripData = snap.val();
+      members = currentTripData.members ? Object.values(currentTripData.members) : [];
+      renderShell("trip");
+      listenExpenses(id);
+    }
+
+    function listenExpenses(id) {
+      const expRef = ref(db, `trips/${id}/expenses`);
+      unsubExpenses = onValue(expRef, snap => {
+        currentExpenses = snap.val() || {};
+        renderExpenses();
+      });
+    }
+
+    // ─── copy share link ─────────────────────────────────────────
+    function bindShareLink() {
+      q("share-btn").addEventListener("click", () => {
+        const url = location.href;
+        if (navigator.share) {
+          navigator.share({ title: "Bang Kee Tour – " + currentTripData.name, url });
+        } else {
+          navigator.clipboard.writeText(url).then(() => toast("คัดลอก link แล้ว 🔗"));
+        }
+      });
+    }
+
+    // ─── render expenses ─────────────────────────────────────────
+    function renderExpenses() {
+      const exps  = Object.entries(currentExpenses).sort((a,b) => (b[1].createdAt||0)-(a[1].createdAt||0));
+      const total = exps.reduce((s,[,e]) => s + e.amount, 0);
+      q("stat-total").textContent = fmt(total);
+      q("stat-count").textContent = exps.length;
+
+      if (exps.length === 0) {
+        q("expense-list").innerHTML = `<div class="empty-state"><div style="font-size:48px;margin-bottom:12px">🧾</div><div style="color:rgba(255,255,255,0.5)">ยังไม่มีรายการ<br>กดปุ่ม + เพื่อเพิ่ม</div></div>`;
+        return;
+      }
+      q("expense-list").innerHTML = exps.map(([eid, e]) => {
+        const chips = (e.splitWith||[]).map(m =>
+          `<span class="tag" style="font-size:11px;padding:2px 8px;background:${color(m)}22;border:1px solid ${color(m)}33">
+            <span style="color:${color(m)}">●</span><span style="color:rgba(255,255,255,0.7)">${esc(m)}</span>
+          </span>`).join("");
+        return `<div class="card exp-item fade-in" style="padding:16px;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div style="flex:1;min-width:0;padding-right:10px">
+              <div style="font-weight:600;font-size:16px;margin-bottom:4px">${esc(e.description)}</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+                ${e.location?`<span style="font-size:12px;color:rgba(255,255,255,0.5)">📍 ${esc(e.location)}</span>`:""}
+                <span style="font-size:12px;color:rgba(255,255,255,0.5)">📅 ${e.date}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <div class="tag" style="background:${color(e.payer)}33;border:1px solid ${color(e.payer)}44">
+                  <span style="color:${color(e.payer)};font-size:11px">●</span>
+                  <span style="color:#fff;font-size:12px">${esc(e.payer)} จ่าย</span>
+                </div>
+                <span style="font-size:12px;color:rgba(255,255,255,0.4)">แบ่ง ${(e.splitWith||[]).length} คน</span>
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <div style="font-size:18px;font-weight:700;color:#FFEAA7">${fmt(e.amount)}</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">${fmt(e.amount/(e.splitWith||[1]).length)}/คน</div>
+              <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end">
+                <button class="edit-btn" data-id="${escA(eid)}" style="background:rgba(100,150,255,0.15);border:1px solid rgba(100,150,255,0.25);color:#85C1E9;font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:inherit">แก้ไข</button>
+                <button class="del-btn"  data-id="${escA(eid)}" style="background:rgba(255,80,80,0.15);border:1px solid rgba(255,80,80,0.2);color:#FF6B6B;font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:inherit">ลบ</button>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">${chips}</div>
+        </div>`;
+      }).join("");
+
+      q("expense-list").querySelectorAll(".edit-btn").forEach(btn =>
+        btn.addEventListener("click", () => openForm(btn.dataset.id)));
+      q("expense-list").querySelectorAll(".del-btn").forEach(btn =>
+        btn.addEventListener("click", () => deleteExpense(btn.dataset.id)));
+    }
+
+    async function deleteExpense(eid) {
+      if (!confirm("ลบรายการนี้?")) return;
+      await remove(ref(db, `trips/${currentTripId}/expenses/${eid}`));
+      toast("ลบรายการแล้ว");
+    }
+
+    // ─── summary ─────────────────────────────────────────────────
+    function showSummary() {
+      q("summary-panel").classList.add("open");
+      renderSummary();
+    }
+    function hideSummary() { q("summary-panel").classList.remove("open"); }
+
+    function calcSettlement() {
+      const bal = {};
+      members.forEach(m => bal[m] = 0);
+      Object.values(currentExpenses).forEach(({ payer, amount, splitWith }) => {
+        if (!splitWith || !splitWith.length) return;
+        const s = amount / splitWith.length;
+        if (bal[payer] !== undefined) bal[payer] += amount;
+        splitWith.forEach(m => { if (bal[m] !== undefined) bal[m] -= s; });
+      });
+      const cred = [], debt = [];
+      Object.entries(bal).forEach(([n, a]) => {
+        if (a >  0.005) cred.push({name:n,amt:a});
+        if (a < -0.005) debt.push({name:n,amt:-a});
+      });
+      const tx = []; let ci=0, di=0;
+      const c = cred.map(x=>({...x})), d = debt.map(x=>({...x}));
+      while (ci<c.length && di<d.length) {
+        const a = Math.min(c[ci].amt, d[di].amt);
+        tx.push({from:d[di].name, to:c[ci].name, amount:a});
+        c[ci].amt -= a; d[di].amt -= a;
+        if (c[ci].amt < 0.005) ci++;
+        if (d[di].amt < 0.005) di++;
+      }
+      return { balance: bal, transactions: tx };
+    }
+
+    function renderSummary() {
+      const { balance, transactions } = calcSettlement();
+      const total = Object.values(currentExpenses).reduce((s,e)=>s+e.amount,0);
+      q("summary-grand-total").textContent = fmt(total);
+      q("summary-members").innerHTML = members.map(m => {
+        const paid = Object.values(currentExpenses).filter(e=>e.payer===m).reduce((s,e)=>s+e.amount,0);
+        const owe  = Object.values(currentExpenses).reduce((s,e)=>(e.splitWith||[]).includes(m)?s+e.amount/(e.splitWith||[1]).length:s,0);
+        const net  = balance[m];
+        return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
+          <div style="width:36px;height:36px;border-radius:18px;background:${color(m)}33;border:2px solid ${color(m)};display:flex;align-items:center;justify-content:center;font-weight:700;color:${color(m)};font-size:14px;flex-shrink:0">${esc(m[0])}</div>
+          <div style="flex:1"><div style="font-weight:600;margin-bottom:2px">${esc(m)}</div><div style="font-size:12px;color:rgba(255,255,255,0.45)">จ่าย ${fmt(paid)} · ควรจ่าย ${fmt(owe)}</div></div>
+          <div style="text-align:right">
+            <div style="font-weight:700;font-size:16px;color:${net>=0?"#4ECDC4":"#FF6B6B"}">${net>=0?"+"+fmt(net):"-"+fmt(-net)}</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.4)">${net>=0?"ได้คืน":"ต้องจ่าย"}</div>
+          </div>
+        </div>`;
+      }).join("");
+
+      q("summary-transactions").innerHTML = transactions.length === 0
+        ? `<div style="text-align:center;padding:20px 0;color:rgba(255,255,255,0.4)">🎉 ทุกคนจ่ายเท่ากัน!</div>`
+        : transactions.map((t,i) => `
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 0;border-bottom:${i<transactions.length-1?"1px solid rgba(255,255,255,0.06)":"none"}">
+            <div class="tag" style="background:${color(t.from)}22;border:1px solid ${color(t.from)}33"><span style="color:${color(t.from)}">●</span>${esc(t.from)}</div>
+            <span style="color:rgba(255,255,255,0.4);font-size:12px">โอน</span>
+            <span style="font-weight:700;color:#FFEAA7">${fmt(t.amount)}</span>
+            <span style="color:rgba(255,255,255,0.4);font-size:12px">ให้</span>
+            <div class="tag" style="background:${color(t.to)}22;border:1px solid ${color(t.to)}33"><span style="color:${color(t.to)}">●</span>${esc(t.to)}</div>
+          </div>`).join("");
+    }
+
+    // ─── expense form ─────────────────────────────────────────────
+    let formSplitWith = [];
+    let formPayer     = "";
+
+    function openForm(eid = null) {
+      editingExpId = eid;
+      const e = eid ? currentExpenses[eid] : null;
+      formPayer     = e ? e.payer     : (members[0]||"");
+      formSplitWith = e ? [...(e.splitWith||[])] : [...members];
+      q("f-desc").value   = e ? e.description : "";
+      q("f-loc").value    = e ? (e.location||"") : "";
+      q("f-amount").value = e ? e.amount : "";
+      q("f-date").value   = e ? e.date   : today();
+      q("form-title").textContent = eid ? "✏️ แก้ไขรายการ" : "➕ เพิ่มรายการ";
+      renderFormChips();
+      q("exp-modal").classList.add("open");
+    }
+    function closeForm() { q("exp-modal").classList.remove("open"); editingExpId = null; }
+
+    function renderFormChips() {
+      const amt = parseFloat(q("f-amount").value)||0;
+      const pp  = formSplitWith.length > 0 ? amt / formSplitWith.length : 0;
+      q("split-label").textContent = `👥 แบ่งจ่ายกับ (${formSplitWith.length} คน${amt&&pp?" · "+fmt(pp)+"/คน":""})`;
+
+      q("payer-chips").innerHTML = members.map(m => {
+        const sel = formPayer === m;
+        return `<div class="chip" data-payer="${escA(m)}" style="background:${sel?color(m)+"33":"rgba(255,255,255,0.05)"};border-color:${sel?color(m):"rgba(255,255,255,0.12)"};color:${sel?color(m):"rgba(255,255,255,0.7)"};font-weight:${sel?700:400}">${esc(m)}</div>`;
+      }).join("");
+      q("payer-chips").querySelectorAll("[data-payer]").forEach(el =>
+        el.addEventListener("click", () => { formPayer = el.dataset.payer; renderFormChips(); }));
+
+      q("split-chips").innerHTML = members.map(m => {
+        const sel = formSplitWith.includes(m);
+        return `<div class="chip" data-split="${escA(m)}" style="background:${sel?color(m)+"33":"rgba(255,255,255,0.05)"};border-color:${sel?color(m):"rgba(255,255,255,0.12)"};color:${sel?color(m):"rgba(255,255,255,0.7)"};font-weight:${sel?700:400}">${sel?"✓ ":""}${esc(m)}</div>`;
+      }).join("");
+      q("split-chips").querySelectorAll("[data-split]").forEach(el =>
+        el.addEventListener("click", () => {
+          const m = el.dataset.split;
+          formSplitWith.includes(m) ? formSplitWith.splice(formSplitWith.indexOf(m),1) : formSplitWith.push(m);
+          renderFormChips();
+        }));
+      updateSaveBtn();
+    }
+
+    function updateSaveBtn() {
+      const ok = q("f-desc").value.trim() && q("f-amount").value && formSplitWith.length>0 && formPayer;
+      q("save-exp-btn").style.background = ok?"linear-gradient(135deg,#667eea,#764ba2)":"rgba(255,255,255,0.1)";
+      q("save-exp-btn").style.opacity    = ok?"1":"0.5";
+    }
+
+    async function saveExpense() {
+      const desc = q("f-desc").value.trim();
+      const amt  = parseFloat(q("f-amount").value);
+      if (!desc||!amt||!formPayer||formSplitWith.length===0) { toast("กรุณากรอกข้อมูลให้ครบ"); return; }
+      const data = { description:desc, location:q("f-loc").value.trim(), amount:amt,
+                     date:q("f-date").value, payer:formPayer, splitWith:formSplitWith,
+                     createdAt: editingExpId ? (currentExpenses[editingExpId]?.createdAt||Date.now()) : Date.now(),
+                     updatedAt: Date.now() };
+      if (editingExpId) {
+        await update(ref(db, `trips/${currentTripId}/expenses/${editingExpId}`), data);
+        toast("แก้ไขแล้ว ✓");
+      } else {
+        await push(ref(db, `trips/${currentTripId}/expenses`), data);
+        toast("บันทึกแล้ว ✓");
+      }
+      closeForm();
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  SHELL RENDERER — สร้าง DOM ตาม screen
+    // ════════════════════════════════════════════════════════════
+    function renderShell(screen) {
+      if (screen === "home") {
+        document.body.innerHTML = buildHomeHTML();
+        bindCreateTrip();
+      } else {
+        document.body.innerHTML = buildTripHTML();
+        q("back-btn").addEventListener("click",       () => { location.hash = ""; });
+        q("share-btn").addEventListener("click",      () => {
+          const url = location.href;
+          if(navigator.share){ navigator.share({title:"Bang Kee Tour – "+currentTripData.name,url}); }
+          else{ navigator.clipboard.writeText(url).then(()=>toast("คัดลอก link แล้ว 🔗")); }
+        });
+        q("summary-btn").addEventListener("click",    showSummary);
+        q("summary-close").addEventListener("click",  hideSummary);
+        q("fab-add").addEventListener("click",        () => openForm());
+        q("exp-modal").addEventListener("click",      e => { if(e.target===q("exp-modal"))closeForm(); });
+        q("exp-modal-close").addEventListener("click",closeForm);
+        q("f-desc").addEventListener("input",         updateSaveBtn);
+        q("f-amount").addEventListener("input",       () => renderFormChips());
+        q("save-exp-btn").addEventListener("click",   saveExpense);
+      }
+    }
+
+    // ─── toast ───────────────────────────────────────────────────
+    function toast(msg) {
+      let t = document.getElementById("_toast");
+      if (!t) { t=document.createElement("div"); t.id="_toast"; document.body.appendChild(t); }
+      t.textContent = msg; t.className = "toast show";
+      clearTimeout(t._timer);
+      t._timer = setTimeout(()=>t.classList.remove("show"), 2200);
+    }
+
+    // ─── HTML builders ───────────────────────────────────────────
+    function buildHomeHTML() {
+      return `
+      ${STYLES}
+      <div id="header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:26px">✈️</span>
+          <div style="font-size:18px;font-weight:700;font-family:'Prompt',sans-serif">Bang Kee Tour</div>
+        </div>
+        <button id="create-trip-btn" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:8px 16px;border-radius:10px;font-size:14px;font-weight:600;border:none;cursor:pointer;font-family:inherit">+ ทริปใหม่</button>
+      </div>
+      <div id="main">
+        <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:12px;font-weight:600;letter-spacing:0.5px">ทริปทั้งหมด</div>
+        <div id="trip-list"></div>
+      </div>
+
+      <!-- Create Trip Modal -->
+      <div id="create-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.75);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:none;align-items:flex-end;z-index:200">
+        <div id="create-modal-bg" style="position:absolute;inset:0"></div>
+        <div style="position:relative;width:100%;max-width:480px;margin:0 auto;max-height:90vh;overflow-y:auto;background:linear-gradient(180deg,#1a1a2e,#16213e);border-top:1px solid rgba(255,255,255,0.1);border-radius:20px 20px 0 0;padding:24px 20px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));animation:slideUp 0.3s ease">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+            <h3 style="font-size:18px;font-weight:700">🗺️ สร้างทริปใหม่</h3>
+            <button id="create-modal-close" style="background:rgba(255,255,255,0.1);border:none;color:#fff;width:32px;height:32px;border-radius:16px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;font-family:inherit">×</button>
+          </div>
+          <div style="margin-bottom:14px">
+            <label class="lbl">🗺️ ชื่อทริป *</label>
+            <input id="new-trip-name" class="inp" placeholder="เช่น เที่ยวญี่ปุ่น 2025" />
+          </div>
+          <div style="margin-bottom:14px">
+            <label class="lbl" id="new-member-lbl">👥 สมาชิก (0 คน)</label>
+            <div style="display:flex;gap:8px;margin-bottom:10px">
+              <input id="new-member-input" class="inp" placeholder="ชื่อ..." style="flex:1" />
+              <button id="new-member-add-btn" style="background:linear-gradient(135deg,#4facfe,#00f2fe);color:#fff;padding:10px 18px;border-radius:10px;font-size:20px;font-weight:700;border:none;cursor:pointer">+</button>
+            </div>
+            <div id="new-members-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+          </div>
+          <button id="save-trip-btn" style="width:100%;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:15px;border-radius:14px;font-size:16px;font-weight:700;border:none;cursor:pointer;font-family:inherit">สร้างทริป 🚀</button>
+        </div>
+      </div>
+      <div id="_toast" class="toast"></div>`;
+    }
+
+    function buildTripHTML() {
+      const name = currentTripData?.name || "";
+      return `
+      ${STYLES}
+      <div id="header">
+        <div style="display:flex;align-items:center;gap:8px">
+          <button id="back-btn" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:#fff;width:34px;height:34px;border-radius:10px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit">←</button>
+          <div>
+            <div style="font-size:16px;font-weight:700;font-family:'Prompt',sans-serif;line-height:1.2">${esc(name)}</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.45)">${members.length} คน · ${members.map(m=>esc(m)).join(", ")}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button id="share-btn" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:7px 12px;border-radius:10px;font-size:13px;cursor:pointer;font-family:inherit">🔗 แชร์</button>
+          <button id="summary-btn" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:7px 14px;border-radius:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:inherit">สรุป 📊</button>
+        </div>
+      </div>
+      <div id="main">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+          <div class="card" style="padding:16px;text-align:center">
+            <div id="stat-total" style="font-size:20px;font-weight:700;color:#4ECDC4">฿0.00</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:2px">ยอดรวมทั้งหมด</div>
+          </div>
+          <div class="card" style="padding:16px;text-align:center">
+            <div id="stat-count" style="font-size:20px;font-weight:700;color:#FF6B6B">0</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:2px">รายการ</div>
+          </div>
+        </div>
+        <div id="expense-list"></div>
+        <button id="fab-add" class="fab">+</button>
+      </div>
+
+      <!-- Summary Panel -->
+      <div id="summary-panel" style="position:fixed;inset:0;background:rgba(0,0,0,0.75);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:none;align-items:flex-end;z-index:200">
+        <div style="width:100%;max-width:480px;margin:0 auto;max-height:90vh;overflow-y:auto;background:linear-gradient(180deg,#1a1a2e,#16213e);border-top:1px solid rgba(255,255,255,0.1);border-radius:20px 20px 0 0;padding:24px 20px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));animation:slideUp 0.3s ease">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+            <h3 style="font-size:18px;font-weight:700">📊 สรุปค่าใช้จ่าย</h3>
+            <button id="summary-close" style="background:rgba(255,255,255,0.1);border:none;color:#fff;width:32px;height:32px;border-radius:16px;cursor:pointer;font-size:18px;font-family:inherit">×</button>
+          </div>
+          <div class="card" style="padding:20px;margin-bottom:14px">
+            <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:12px">ยอดของแต่ละคน</div>
+            <div id="summary-members"></div>
+          </div>
+          <div class="card" style="padding:20px;margin-bottom:14px">
+            <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:12px">💸 สรุปการโอนเงิน</div>
+            <div id="summary-transactions"></div>
+          </div>
+          <div class="card" style="padding:16px;text-align:center;background:rgba(102,126,234,0.1);border-color:rgba(102,126,234,0.3)">
+            <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:4px">ยอดรวมทั้งทริป</div>
+            <div id="summary-grand-total" style="font-size:28px;font-weight:700;color:#FFEAA7">฿0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Expense Form Modal -->
+      <div id="exp-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.75);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:none;align-items:flex-end;z-index:200">
+        <div style="width:100%;max-width:480px;margin:0 auto;max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:linear-gradient(180deg,#1a1a2e,#16213e);border-top:1px solid rgba(255,255,255,0.1);border-radius:20px 20px 0 0;padding:24px 20px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));animation:slideUp 0.3s ease">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+            <h3 id="form-title" style="font-size:18px;font-weight:700">➕ เพิ่มรายการ</h3>
+            <button id="exp-modal-close" style="background:rgba(255,255,255,0.1);border:none;color:#fff;width:32px;height:32px;border-radius:16px;cursor:pointer;font-size:18px;font-family:inherit">×</button>
+          </div>
+          <div style="margin-bottom:14px"><label class="lbl">📝 รายการ *</label><input id="f-desc" class="inp" placeholder="เช่น ข้าวเที่ยง, ตั๋ว" /></div>
+          <div style="margin-bottom:14px"><label class="lbl">📍 สถานที่</label><input id="f-loc" class="inp" placeholder="เช่น Osaka" /></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+            <div><label class="lbl">💰 จำนวนเงิน (฿) *</label><input id="f-amount" class="inp" type="number" inputmode="decimal" placeholder="0.00" style="font-size:16px;font-weight:700" /></div>
+            <div><label class="lbl">📅 วันที่</label><input id="f-date" class="inp" type="date" style="font-size:14px" /></div>
+          </div>
+          <div style="margin-bottom:14px"><label class="lbl">👤 คนจ่าย *</label><div id="payer-chips" style="display:flex;flex-wrap:wrap;margin:-4px"></div></div>
+          <div style="margin-bottom:20px"><label class="lbl" id="split-label">👥 แบ่งจ่ายกับ</label><div id="split-chips" style="display:flex;flex-wrap:wrap;margin:-4px"></div></div>
+          <button id="save-exp-btn" style="width:100%;background:rgba(255,255,255,0.1);color:#fff;padding:15px;border-radius:14px;font-size:16px;font-weight:700;border:none;cursor:pointer;opacity:0.5;font-family:inherit">บันทึก ✓</button>
+        </div>
+      </div>
+      <div id="_toast" class="toast"></div>`;
+    }
+
+    const STYLES = `
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+      body{font-family:'Sarabun','Prompt',sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);min-height:100vh;color:#fff;overscroll-behavior:none;}
+      @supports(-webkit-touch-callout:none){body{min-height:-webkit-fill-available;}}
+      input,button{font-family:inherit;outline:none;-webkit-appearance:none;}
+      input[type="date"]{color-scheme:dark;}
+      .card{background:rgba(255,255,255,0.07);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.1);border-radius:16px;}
+      .tag{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600;}
+      .chip{display:inline-flex;align-items:center;padding:8px 14px;border-radius:10px;font-size:14px;border:1.5px solid;margin:4px;cursor:pointer;transition:all 0.15s;}
+      .chip:active{opacity:0.75;}
+      .fade-in{animation:fadeIn 0.3s ease;}
+      @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+      @keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+      #header{background:rgba(0,0,0,0.3);border-bottom:1px solid rgba(255,255,255,0.08);padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top,0px));display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);}
+      #main{max-width:480px;margin:0 auto;padding:16px 16px 120px;}
+      .inp{width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:10px;padding:12px 14px;color:#fff;font-size:16px;font-family:inherit;}
+      .inp::placeholder{color:rgba(255,255,255,0.3);}
+      label.lbl{font-size:12px;color:rgba(255,255,255,0.55);display:block;margin-bottom:7px;}
+      .fab{position:fixed;bottom:calc(28px + env(safe-area-inset-bottom,0px));right:24px;background:linear-gradient(135deg,#667eea,#764ba2);width:62px;height:62px;border-radius:31px;font-size:30px;color:#fff;box-shadow:0 8px 32px rgba(102,126,234,0.55);display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;}
+      .fab:active{transform:scale(0.93);}
+      .empty-state{padding:40px;text-align:center;}
+      .trip-card{padding:16px;margin-bottom:12px;cursor:pointer;transition:all 0.15s;}
+      .trip-card:active{opacity:0.8;transform:scale(0.99);}
+      #summary-panel,#exp-modal,#create-modal{display:none;align-items:flex-end;}
+      #summary-panel.open,#exp-modal.open,#create-modal.open{display:flex;}
+      .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(40,40,80,0.95);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;opacity:0;transition:all 0.3s;pointer-events:none;z-index:999;white-space:nowrap;}
+      .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+    </style>`;
+
+    // kick off
+    route();
+  </script>
+</head>
+<body></body>
 </html>
