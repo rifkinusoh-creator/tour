@@ -10,225 +10,420 @@
   <meta name="apple-mobile-web-app-title" content="Bang Kee Tour" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=Prompt:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    body{font-family:'Sarabun','Prompt',sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);min-height:100vh;color:#fff;overscroll-behavior:none;}
+    @supports(-webkit-touch-callout:none){body{min-height:-webkit-fill-available;}}
+    input,button{font-family:inherit;outline:none;-webkit-appearance:none;}
+    input[type="date"]{color-scheme:dark;}
+    .card{background:rgba(255,255,255,0.07);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.1);border-radius:16px;}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600;}
+    .chip{display:inline-flex;align-items:center;padding:8px 14px;border-radius:10px;font-size:14px;border:1.5px solid;margin:4px;cursor:pointer;transition:all 0.15s;}
+    .chip:active{opacity:0.75;}
+    .fade-in{animation:fadeIn 0.3s ease;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+    #header{background:rgba(0,0,0,0.3);border-bottom:1px solid rgba(255,255,255,0.08);padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top,0px));display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);}
+    #main{max-width:480px;margin:0 auto;padding:16px 16px 120px;}
+    .inp{width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:10px;padding:12px 14px;color:#fff;font-size:16px;font-family:inherit;}
+    .inp::placeholder{color:rgba(255,255,255,0.3);}
+    label.lbl{font-size:12px;color:rgba(255,255,255,0.55);display:block;margin-bottom:7px;}
+    .fab{position:fixed;bottom:calc(28px + env(safe-area-inset-bottom,0px));right:24px;background:linear-gradient(135deg,#667eea,#764ba2);width:62px;height:62px;border-radius:31px;font-size:30px;color:#fff;box-shadow:0 8px 32px rgba(102,126,234,0.55);display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;}
+    .fab:active{transform:scale(0.93);}
+    .empty-state{padding:40px;text-align:center;}
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);align-items:flex-end;z-index:200;}
+    .modal-overlay.open{display:flex;}
+    .modal-box{width:100%;max-width:480px;margin:0 auto;max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:linear-gradient(180deg,#1a1a2e,#16213e);border-top:1px solid rgba(255,255,255,0.1);border-radius:20px 20px 0 0;padding:24px 20px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));animation:slideUp 0.3s ease;}
+    .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(40,40,80,0.95);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;opacity:0;transition:all 0.3s;pointer-events:none;z-index:999;white-space:nowrap;}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+    .exp-card{padding:16px;margin-bottom:10px;}
+    .btn-sm{font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:inherit;border:1px solid;}
+  </style>
 
-  <!-- ============================================================
-       🔥 STEP 1: ใส่ Firebase Config ของคุณตรงนี้
-       ไปที่ Firebase Console > Project Settings > Your Apps > Config
-       ============================================================ -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { initializeApp }    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getDatabase, ref, set, get, push, update, remove, onValue, off }
       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-    // ✏️ แก้ตรงนี้ด้วย config จาก Firebase Console ของคุณ
-   const firebaseConfig = {
-  apiKey: "AIzaSyB5pa7_GsVGWBKZxBVLX82CLbftgjt8jio",
-  authDomain: "bung-kee-tour.firebaseapp.com",
-  databaseURL: "https://bung-kee-tour-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "bung-kee-tour",
-  storageBucket: "bung-kee-tour.firebasestorage.app",
-  messagingSenderId: "603611862111",
-  appId: "1:603611862111:web:980cc43d99b3a566f977ea",
-  measurementId: "G-GHGR73S4D4"
-};
+    // ✏️ ใส่ Firebase Config ของคุณตรงนี้
+    const firebaseConfig = {
+      apiKey:            "YOUR_API_KEY",
+      authDomain:        "YOUR_PROJECT.firebaseapp.com",
+      databaseURL:       "https://YOUR_PROJECT-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId:         "YOUR_PROJECT_ID",
+      storageBucket:     "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId:             "YOUR_APP_ID"
+    };
 
     const app = initializeApp(firebaseConfig);
     const db  = getDatabase(app);
 
-    // ─── helpers ─────────────────────────────────────────────────
+    /* ── utils ─────────────────────────────────────────────────── */
     const COLORS = ["#FF6B6B","#4ECDC4","#45B7D1","#96CEB4","#FFEAA7",
                     "#DDA0DD","#98D8C8","#F7DC6F","#BB8FCE","#85C1E9"];
-
     let members = [];
-    const color  = m => COLORS[members.indexOf(m) % COLORS.length] || COLORS[0];
-    const fmt    = n => "฿" + Math.abs(n).toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
-    const esc    = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    const escA   = s => String(s).replace(/"/g,"&quot;");
-    const q      = id => document.getElementById(id);
-    const today  = () => new Date().toISOString().split("T")[0];
+    const clr  = m  => COLORS[members.indexOf(m) % COLORS.length] || COLORS[0];
+    const clrN = (m,arr) => COLORS[arr.indexOf(m) % COLORS.length] || COLORS[0];
+    const fmt  = n  => "฿" + Math.abs(n).toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2});
+    const esc  = s  => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const escA = s  => String(s).replace(/"/g,"&quot;");
+    const q    = id => document.getElementById(id);
+    const today= () => new Date().toISOString().split("T")[0];
 
-    // ─── state ───────────────────────────────────────────────────
-    let currentTripId   = null;   // key ใน Firebase
-    let currentTripData = null;   // {name, members, createdAt}
-    let currentExpenses = {};     // {expenseId: {...}}
-    let editingExpId    = null;   // กำลังแก้ไข expense ใด
-    let unsubExpenses   = null;   // listener
+    /* ── state ──────────────────────────────────────────────────── */
+    let currentTripId   = null;
+    let currentTripData = null;
+    let currentExpenses = {};
+    let editingExpId    = null;
+    let unsubExpenses   = null;
+    let formPayer       = "";
+    let formSplitWith   = [];
+    let newTripMembers  = [];
 
-    // ─── router (hash-based) ─────────────────────────────────────
+    /* ══════════════════════════════════════════════════════════════
+       ROUTER  —  hash-based, ไม่มีหน้า home
+    ══════════════════════════════════════════════════════════════ */
     function route() {
-      const hash = location.hash; // #trip/TRIPID
+      const hash = location.hash;
       if (hash.startsWith("#trip/")) {
-        const tid = hash.slice(6);
-        openTrip(tid);
+        openTrip(hash.slice(6));
       } else {
-        showHomeScreen();
+        showNoLink();          // ไม่มี link → หน้า "กรุณาใช้ link"
       }
     }
     window.addEventListener("hashchange", route);
 
-    // ════════════════════════════════════════════════════════════
-    //  HOME — รายการทริปทั้งหมด
-    // ════════════════════════════════════════════════════════════
-    async function showHomeScreen() {
-      if (unsubExpenses) { off(ref(db, `trips/${currentTripId}/expenses`)); unsubExpenses = null; }
+    /* ── admin password ─────────────────────────────────────────── */
+    // ✏️ เปลี่ยน password ตรงนี้ได้เลย
+    const ADMIN_PASSWORD = "bangkee2025";
+    const ADMIN_KEY      = "bkt_admin_ok";
+
+    function isAdmin()    { return sessionStorage.getItem(ADMIN_KEY) === "1"; }
+    function setAdmin()   { sessionStorage.setItem(ADMIN_KEY, "1"); }
+
+    /* ── หน้าไม่มี link ─────────────────────────────────────────── */
+    function showNoLink() {
+      stopListening();
       currentTripId = null; currentTripData = null; members = [];
-      renderShell("home");
-      loadTrips();
+      if (isAdmin()) { showAdminHome(); return; }
+      document.body.innerHTML = `
+        <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center">
+          <div id="logo-btn" style="font-size:72px;margin-bottom:20px;cursor:pointer;user-select:none">✈️</div>
+          <div style="font-size:26px;font-weight:700;font-family:'Prompt',sans-serif;margin-bottom:12px">Bang Kee Tour</div>
+          <div style="color:rgba(255,255,255,0.5);font-size:15px;line-height:1.7;margin-bottom:32px">
+            ขอ link ทริปจากเพื่อน<br>แล้วกดเปิดได้เลย
+          </div>
+          <div class="card" style="padding:20px;max-width:320px;width:100%">
+            <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:10px">🔒 เข้าได้เฉพาะคนที่มี link เท่านั้น</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.3);line-height:1.6">ข้อมูลทริปแต่ละกลุ่ม<br>จะไม่แสดงแก่คนอื่น</div>
+          </div>
+          <div id="admin-hint" style="margin-top:48px;font-size:11px;color:rgba(255,255,255,0.15);min-height:16px"></div>
+        </div>
+        <!-- Admin login modal -->
+        <div id="admin-modal" class="modal-overlay">
+          <div class="modal-box" style="max-height:auto">
+            <div style="text-align:center;margin-bottom:20px">
+              <div style="font-size:36px;margin-bottom:8px">🔑</div>
+              <div style="font-size:18px;font-weight:700">Admin Login</div>
+              <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:4px">ใส่รหัสเพื่อดูทริปทั้งหมด</div>
+            </div>
+            <input id="admin-pw-input" class="inp" type="password" placeholder="รหัสผ่าน..." style="margin-bottom:12px;text-align:center;font-size:18px;letter-spacing:4px" />
+            <button id="admin-pw-btn" style="width:100%;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px;border-radius:14px;font-size:16px;font-weight:700;border:none;cursor:pointer;font-family:inherit">เข้าสู่ระบบ</button>
+            <div id="admin-pw-err" style="text-align:center;color:#FF6B6B;font-size:13px;margin-top:10px;min-height:18px"></div>
+          </div>
+        </div>
+        <div id="_toast" class="toast"></div>`;
+
+      // tap logo 5x to open admin login
+      let taps=0, tapTimer;
+      q("logo-btn").addEventListener("click", () => {
+        taps++; clearTimeout(tapTimer);
+        const hint = q("admin-hint");
+        if (taps >= 5) {
+          taps=0; hint.textContent="";
+          q("admin-modal").classList.add("open");
+          setTimeout(()=>q("admin-pw-input").focus(), 300);
+        } else {
+          hint.textContent = `แตะอีก ${5-taps} ครั้ง`;
+          tapTimer = setTimeout(()=>{ taps=0; hint.textContent=""; }, 2000);
+        }
+      });
+
+      // admin password submit
+      const doAdminLogin = () => {
+        const pw = q("admin-pw-input").value;
+        if (pw === ADMIN_PASSWORD) {
+          setAdmin();
+          q("admin-modal").classList.remove("open");
+          showAdminHome();
+        } else {
+          q("admin-pw-err").textContent = "รหัสไม่ถูกต้อง";
+          q("admin-pw-input").value = "";
+          setTimeout(()=>q("admin-pw-err").textContent="", 2000);
+        }
+      };
+      q("admin-pw-btn").addEventListener("click", doAdminLogin);
+      q("admin-pw-input").addEventListener("keydown", e=>{ if(e.key==="Enter") doAdminLogin(); });
     }
 
-    async function loadTrips() {
-      const snap = await get(ref(db, "trips"));
+    /* ══════════════════════════════════════════════════════════════
+       ADMIN HOME — เห็นทริปทั้งหมด
+    ══════════════════════════════════════════════════════════════ */
+    async function showAdminHome() {
+      stopListening();
+      currentTripId = null; currentTripData = null; members = [];
+      document.body.innerHTML = `
+        <div id="header">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:22px">✈️</span>
+            <div>
+              <div style="font-size:16px;font-weight:700;font-family:'Prompt',sans-serif">Bang Kee Tour</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.4)">🔑 Admin</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button id="admin-logout-btn" style="background:rgba(255,80,80,0.15);border:1px solid rgba(255,80,80,0.25);color:#FF6B6B;padding:7px 12px;border-radius:10px;font-size:13px;cursor:pointer;font-family:inherit">ออกจากระบบ</button>
+            <button id="admin-new-trip-btn" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:7px 14px;border-radius:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:inherit">+ ทริปใหม่</button>
+          </div>
+        </div>
+        <div id="main">
+          <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:12px;font-weight:600;letter-spacing:0.5px">ทริปทั้งหมด</div>
+          <div id="trip-list"><div class="empty-state" style="color:rgba(255,255,255,0.3)">กำลังโหลด...</div></div>
+        </div>
+
+        <!-- Create Trip Modal -->
+        <div id="create-modal" class="modal-overlay">
+          <div class="modal-box">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+              <h3 style="font-size:18px;font-weight:700">🗺️ สร้างทริปใหม่</h3>
+              <button id="create-modal-close" style="background:rgba(255,255,255,0.1);border:none;color:#fff;width:32px;height:32px;border-radius:16px;cursor:pointer;font-size:18px;font-family:inherit">×</button>
+            </div>
+            ${createTripFormHTML()}
+          </div>
+        </div>
+        <div id="_toast" class="toast"></div>`;
+
+      q("admin-logout-btn").addEventListener("click", ()=>{
+        sessionStorage.removeItem(ADMIN_KEY);
+        showNoLink();
+      });
+      q("admin-new-trip-btn").addEventListener("click", ()=>showCreateModal(false));
+      q("create-modal-close").addEventListener("click", ()=>q("create-modal").classList.remove("open"));
+      q("create-modal").addEventListener("click", e=>{ if(e.target===q("create-modal")) q("create-modal").classList.remove("open"); });
+      bindCreateTripForm();
+      await loadAdminTrips();
+    }
+
+    async function loadAdminTrips() {
+      const snap  = await get(ref(db,"trips"));
       const trips = snap.val() || {};
       const list  = q("trip-list");
-      const keys  = Object.keys(trips).sort((a,b) => (trips[b].createdAt||0)-(trips[a].createdAt||0));
-      if (keys.length === 0) {
-        list.innerHTML = `<div class="empty-state"><div style="font-size:48px;margin-bottom:12px">🗺️</div><div style="color:rgba(255,255,255,0.5)">ยังไม่มีทริป<br>สร้างทริปแรกได้เลย!</div></div>`;
+      const keys  = Object.keys(trips).sort((a,b)=>(trips[b].createdAt||0)-(trips[a].createdAt||0));
+      if (keys.length===0) {
+        list.innerHTML=`<div class="empty-state"><div style="font-size:48px;margin-bottom:12px">🗺️</div><div style="color:rgba(255,255,255,0.5)">ยังไม่มีทริป<br>กด "+ ทริปใหม่" เพื่อเริ่ม</div></div>`;
         return;
       }
-      list.innerHTML = keys.map(k => {
-        const t = trips[k];
-        const mems = t.members ? Object.values(t.members) : [];
-        const date = t.createdAt ? new Date(t.createdAt).toLocaleDateString("th-TH") : "";
-        return `<div class="card trip-card" data-id="${escA(k)}">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <div style="flex:1">
+      list.innerHTML = keys.map(k=>{
+        const t=trips[k];
+        const mems=t.members?Object.values(t.members):[];
+        const date=t.createdAt?new Date(t.createdAt).toLocaleDateString("th-TH"):"";
+        const tripUrl=`${location.origin}${location.pathname}#trip/${k}`;
+        return `<div class="card" style="padding:16px;margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+            <div style="flex:1;min-width:0;cursor:pointer" data-open="${k}">
               <div style="font-weight:700;font-size:17px;margin-bottom:4px">${esc(t.name)}</div>
               <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:8px">📅 ${date} &nbsp;·&nbsp; 👥 ${mems.length} คน</div>
               <div style="display:flex;flex-wrap:wrap;gap:4px">
-                ${mems.slice(0,5).map(m=>`<span class="tag" style="background:${memberColorByName(m,mems)}33;border:1px solid ${memberColorByName(m,mems)}55;font-size:12px;padding:2px 8px"><span style="color:${memberColorByName(m,mems)}">●</span> ${esc(m)}</span>`).join("")}
-                ${mems.length>5?`<span class="tag" style="background:rgba(255,255,255,0.1);font-size:12px">+${mems.length-5}</span>`:""}
+                ${mems.slice(0,6).map((m,i)=>`<span class="tag" style="background:${COLORS[i%COLORS.length]}33;border:1px solid ${COLORS[i%COLORS.length]}55;font-size:12px;padding:2px 8px"><span style="color:${COLORS[i%COLORS.length]}">●</span> ${esc(m)}</span>`).join("")}
+                ${mems.length>6?`<span class="tag" style="background:rgba(255,255,255,0.1);font-size:12px">+${mems.length-6}</span>`:""}
               </div>
             </div>
-            <div style="text-align:right;flex-shrink:0;margin-left:12px">
-              <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:6px">แตะเพื่อเปิด</div>
-              <button class="del-trip-btn" data-id="${escA(k)}" style="background:rgba(255,80,80,0.15);border:1px solid rgba(255,80,80,0.25);color:#FF6B6B;font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:inherit">ลบ</button>
+            <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+              <button class="btn-sm share-trip-btn" data-url="${escA(tripUrl)}" data-name="${escA(t.name)}" style="background:rgba(100,150,255,0.15);border-color:rgba(100,150,255,0.25);color:#85C1E9">🔗 แชร์</button>
+              <button class="btn-sm del-trip-btn" data-id="${escA(k)}" style="background:rgba(255,80,80,0.15);border-color:rgba(255,80,80,0.2);color:#FF6B6B">ลบ</button>
             </div>
           </div>
         </div>`;
       }).join("");
 
-      list.querySelectorAll(".trip-card").forEach(el => {
-        el.addEventListener("click", e => {
-          if (e.target.classList.contains("del-trip-btn")) return;
-          location.hash = "#trip/" + el.dataset.id;
-        });
-      });
-      list.querySelectorAll(".del-trip-btn").forEach(btn => {
-        btn.addEventListener("click", e => { e.stopPropagation(); confirmDeleteTrip(btn.dataset.id); });
-      });
+      list.querySelectorAll("[data-open]").forEach(el=>
+        el.addEventListener("click",()=>{ location.hash="#trip/"+el.dataset.open; }));
+      list.querySelectorAll(".share-trip-btn").forEach(btn=>
+        btn.addEventListener("click",()=>{
+          const url=btn.dataset.url, name=btn.dataset.name;
+          if(navigator.share){navigator.share({title:"Bang Kee Tour – "+name,url});}
+          else{navigator.clipboard.writeText(url).then(()=>toast("คัดลอก link แล้ว 🔗"));}
+        }));
+      list.querySelectorAll(".del-trip-btn").forEach(btn=>
+        btn.addEventListener("click",async()=>{
+          if(!confirm("ลบทริปนี้?"))return;
+          await remove(ref(db,"trips/"+btn.dataset.id));
+          toast("ลบทริปแล้ว");
+          loadAdminTrips();
+        }));
     }
 
-    function memberColorByName(m, arr) { return COLORS[arr.indexOf(m) % COLORS.length] || COLORS[0]; }
-
-    async function confirmDeleteTrip(id) {
-      if (!confirm("ลบทริปนี้?")) return;
-      await remove(ref(db, `trips/${id}`));
-      loadTrips();
-      toast("ลบทริปแล้ว");
-    }
-
-    // ─── create trip ─────────────────────────────────────────────
-    function bindCreateTrip() {
-      q("create-trip-btn").addEventListener("click", () => {
-        q("create-modal").classList.add("open");
-        q("new-trip-name").value = "";
-        q("new-members-list").innerHTML = "";
-        q("new-member-input").value = "";
-        newTripMembers = [];
-      });
-      q("create-modal-close").addEventListener("click",  () => q("create-modal").classList.remove("open"));
-      q("create-modal-bg").addEventListener("click",     () => q("create-modal").classList.remove("open"));
-      q("new-member-add-btn").addEventListener("click",  addNewMember);
-      q("new-member-input").addEventListener("keydown",  e => { if(e.key==="Enter"){e.preventDefault();addNewMember();} });
-      q("save-trip-btn").addEventListener("click",       saveNewTrip);
-    }
-
-    let newTripMembers = [];
-    function addNewMember() {
-      const n = q("new-member-input").value.trim();
-      if (!n) return;
-      if (newTripMembers.includes(n)) { toast("มีชื่อนี้แล้ว"); return; }
-      newTripMembers.push(n);
-      q("new-member-input").value = "";
-      renderNewMembers();
-    }
-    function renderNewMembers() {
-      const lbl = q("new-member-lbl");
-      if (lbl) lbl.textContent = "👥 สมาชิก (" + newTripMembers.length + " คน)";
-      q("new-members-list").innerHTML = newTripMembers.map((m,i) =>
-        `<div class="tag" style="background:${COLORS[i%COLORS.length]}33;border:1px solid ${COLORS[i%COLORS.length]}55">
-          <span style="color:${COLORS[i%COLORS.length]}">●</span>${esc(m)}
-          <span data-rm="${escA(m)}" style="cursor:pointer;color:rgba(255,255,255,0.4);font-size:18px;line-height:1">×</span>
-        </div>`
-      ).join("");
-      q("new-members-list").querySelectorAll("[data-rm]").forEach(el =>
-        el.addEventListener("click", function(){ newTripMembers=newTripMembers.filter(x=>x!==this.dataset.rm); renderNewMembers(); })
-      );
-    }
-
-    async function saveNewTrip() {
-      const name = q("new-trip-name").value.trim();
-      if (!name) { toast("กรุณาใส่ชื่อทริป"); return; }
-      if (newTripMembers.length < 2) { toast("ต้องมีสมาชิกอย่างน้อย 2 คน"); return; }
-      const tripRef  = push(ref(db, "trips"));
-      const membObj  = {};
-      newTripMembers.forEach((m, i) => membObj[`m${i}`] = m);
-      await set(tripRef, { name, members: membObj, createdAt: Date.now() });
-      q("create-modal").classList.remove("open");
-      toast("สร้างทริปแล้ว 🎉");
-      location.hash = "#trip/" + tripRef.key;
-    }
-
-    // ════════════════════════════════════════════════════════════
-    //  TRIP — หน้ารายการในทริป
-    // ════════════════════════════════════════════════════════════
+    /* ══════════════════════════════════════════════════════════════
+       TRIP SCREEN
+    ══════════════════════════════════════════════════════════════ */
     async function openTrip(id) {
+      stopListening();
       const snap = await get(ref(db, `trips/${id}`));
-      if (!snap.exists()) { toast("ไม่พบทริปนี้"); location.hash = ""; return; }
+      if (!snap.exists()) {
+        showNoLink();
+        toast("ไม่พบทริปนี้ หรือถูกลบแล้ว");
+        return;
+      }
       currentTripId   = id;
       currentTripData = snap.val();
       members = currentTripData.members ? Object.values(currentTripData.members) : [];
-      renderShell("trip");
+      buildTripShell();
       listenExpenses(id);
     }
 
+    function stopListening() {
+      if (unsubExpenses && currentTripId) {
+        off(ref(db, `trips/${currentTripId}/expenses`));
+        unsubExpenses = null;
+      }
+    }
+
     function listenExpenses(id) {
-      const expRef = ref(db, `trips/${id}/expenses`);
-      unsubExpenses = onValue(expRef, snap => {
+      unsubExpenses = onValue(ref(db, `trips/${id}/expenses`), snap => {
         currentExpenses = snap.val() || {};
         renderExpenses();
       });
     }
 
-    // ─── copy share link ─────────────────────────────────────────
-    function bindShareLink() {
-      q("share-btn").addEventListener("click", () => {
-        const url = location.href;
-        if (navigator.share) {
-          navigator.share({ title: "Bang Kee Tour – " + currentTripData.name, url });
-        } else {
-          navigator.clipboard.writeText(url).then(() => toast("คัดลอก link แล้ว 🔗"));
-        }
-      });
+    /* ── build trip shell ───────────────────────────────────────── */
+    function buildTripShell() {
+      const name = currentTripData?.name || "";
+      document.body.innerHTML = `
+        <div id="header">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0">
+            <div style="min-width:0">
+              <div style="font-size:16px;font-weight:700;font-family:'Prompt',sans-serif;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(name)}</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${members.length} คน · ${members.map(m=>esc(m)).join(", ")}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button id="share-btn" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:7px 11px;border-radius:10px;font-size:13px;cursor:pointer;font-family:inherit">🔗</button>
+            <button id="new-trip-btn" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:7px 11px;border-radius:10px;font-size:13px;cursor:pointer;font-family:inherit">+ ทริป</button>
+            <button id="summary-btn" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:7px 13px;border-radius:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:inherit">สรุป 📊</button>
+          </div>
+        </div>
+        <div id="main">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+            <div class="card" style="padding:16px;text-align:center">
+              <div id="stat-total" style="font-size:20px;font-weight:700;color:#4ECDC4">฿0.00</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:2px">ยอดรวมทั้งหมด</div>
+            </div>
+            <div class="card" style="padding:16px;text-align:center">
+              <div id="stat-count" style="font-size:20px;font-weight:700;color:#FF6B6B">0</div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:2px">รายการ</div>
+            </div>
+          </div>
+          <div id="expense-list"></div>
+          <button id="fab-add" class="fab">+</button>
+        </div>
+
+        <!-- Summary -->
+        <div id="summary-panel" class="modal-overlay">
+          <div class="modal-box">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+              <h3 style="font-size:18px;font-weight:700">📊 สรุปค่าใช้จ่าย</h3>
+              <button id="summary-close" style="background:rgba(255,255,255,0.1);border:none;color:#fff;width:32px;height:32px;border-radius:16px;cursor:pointer;font-size:18px;font-family:inherit">×</button>
+            </div>
+            <div class="card" style="padding:20px;margin-bottom:14px">
+              <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:12px">ยอดของแต่ละคน</div>
+              <div id="summary-members"></div>
+            </div>
+            <div class="card" style="padding:20px;margin-bottom:14px">
+              <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:12px">💸 สรุปการโอนเงิน</div>
+              <div id="summary-transactions"></div>
+            </div>
+            <div class="card" style="padding:16px;text-align:center;background:rgba(102,126,234,0.1);border-color:rgba(102,126,234,0.3)">
+              <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:4px">ยอดรวมทั้งทริป</div>
+              <div id="summary-grand-total" style="font-size:28px;font-weight:700;color:#FFEAA7">฿0.00</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Expense Form -->
+        <div id="exp-modal" class="modal-overlay">
+          <div class="modal-box">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+              <h3 id="form-title" style="font-size:18px;font-weight:700">➕ เพิ่มรายการ</h3>
+              <button id="exp-modal-close" style="background:rgba(255,255,255,0.1);border:none;color:#fff;width:32px;height:32px;border-radius:16px;cursor:pointer;font-size:18px;font-family:inherit">×</button>
+            </div>
+            <div style="margin-bottom:14px"><label class="lbl">📝 รายการ *</label><input id="f-desc" class="inp" placeholder="เช่น ข้าวเที่ยง, ตั๋ว" /></div>
+            <div style="margin-bottom:14px"><label class="lbl">📍 สถานที่</label><input id="f-loc" class="inp" placeholder="เช่น Osaka" /></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+              <div><label class="lbl">💰 จำนวนเงิน (฿) *</label><input id="f-amount" class="inp" type="number" inputmode="decimal" placeholder="0.00" style="font-size:16px;font-weight:700" /></div>
+              <div><label class="lbl">📅 วันที่</label><input id="f-date" class="inp" type="date" style="font-size:14px" /></div>
+            </div>
+            <div style="margin-bottom:14px"><label class="lbl">👤 คนจ่าย *</label><div id="payer-chips" style="display:flex;flex-wrap:wrap;margin:-4px"></div></div>
+            <div style="margin-bottom:20px"><label class="lbl" id="split-label">👥 แบ่งจ่ายกับ</label><div id="split-chips" style="display:flex;flex-wrap:wrap;margin:-4px"></div></div>
+            <button id="save-exp-btn" style="width:100%;background:rgba(255,255,255,0.1);color:#fff;padding:15px;border-radius:14px;font-size:16px;font-weight:700;border:none;cursor:pointer;opacity:0.5;font-family:inherit">บันทึก ✓</button>
+          </div>
+        </div>
+
+        <!-- Create Trip Modal (from inside trip) -->
+        <div id="create-modal" class="modal-overlay">
+          <div class="modal-box">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+              <h3 style="font-size:18px;font-weight:700">🗺️ สร้างทริปใหม่</h3>
+              <button id="create-modal-close" style="background:rgba(255,255,255,0.1);border:none;color:#fff;width:32px;height:32px;border-radius:16px;cursor:pointer;font-size:18px;font-family:inherit">×</button>
+            </div>
+            ${createTripFormHTML()}
+          </div>
+        </div>
+
+        <div id="_toast" class="toast"></div>`;
+
+      // bind events
+      q("share-btn").addEventListener("click", shareTrip);
+      q("summary-btn").addEventListener("click", () => { renderSummary(); q("summary-panel").classList.add("open"); });
+      q("summary-close").addEventListener("click", () => q("summary-panel").classList.remove("open"));
+      q("fab-add").addEventListener("click", () => openExpForm());
+      q("exp-modal").addEventListener("click", e => { if(e.target===q("exp-modal")) closeExpForm(); });
+      q("exp-modal-close").addEventListener("click", closeExpForm);
+      q("f-desc").addEventListener("input", updateSaveBtn);
+      q("f-amount").addEventListener("input", renderFormChips);
+      q("save-exp-btn").addEventListener("click", saveExpense);
+      q("new-trip-btn").addEventListener("click", () => showCreateModal(false));
+      q("create-modal-close").addEventListener("click", () => q("create-modal").classList.remove("open"));
+      q("create-modal").addEventListener("click", e => { if(e.target===q("create-modal")) q("create-modal").classList.remove("open"); });
+      bindCreateTripForm();
     }
 
-    // ─── render expenses ─────────────────────────────────────────
+    /* ── share ──────────────────────────────────────────────────── */
+    function shareTrip() {
+      const url = `${location.origin}${location.pathname}#trip/${currentTripId}`;
+      if (navigator.share) {
+        navigator.share({ title: "Bang Kee Tour – " + currentTripData.name, url });
+      } else {
+        navigator.clipboard.writeText(url).then(() => toast("คัดลอก link แล้ว 🔗"));
+      }
+    }
+
+    /* ── render expenses ────────────────────────────────────────── */
     function renderExpenses() {
-      const exps  = Object.entries(currentExpenses).sort((a,b) => (b[1].createdAt||0)-(a[1].createdAt||0));
-      const total = exps.reduce((s,[,e]) => s + e.amount, 0);
+      const exps  = Object.entries(currentExpenses).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));
+      const total = exps.reduce((s,[,e])=>s+e.amount,0);
       q("stat-total").textContent = fmt(total);
       q("stat-count").textContent = exps.length;
-
       if (exps.length === 0) {
         q("expense-list").innerHTML = `<div class="empty-state"><div style="font-size:48px;margin-bottom:12px">🧾</div><div style="color:rgba(255,255,255,0.5)">ยังไม่มีรายการ<br>กดปุ่ม + เพื่อเพิ่ม</div></div>`;
         return;
       }
-      q("expense-list").innerHTML = exps.map(([eid, e]) => {
-        const chips = (e.splitWith||[]).map(m =>
-          `<span class="tag" style="font-size:11px;padding:2px 8px;background:${color(m)}22;border:1px solid ${color(m)}33">
-            <span style="color:${color(m)}">●</span><span style="color:rgba(255,255,255,0.7)">${esc(m)}</span>
+      q("expense-list").innerHTML = exps.map(([eid,e]) => {
+        const chips = (e.splitWith||[]).map(m=>
+          `<span class="tag" style="font-size:11px;padding:2px 8px;background:${clr(m)}22;border:1px solid ${clr(m)}33">
+            <span style="color:${clr(m)}">●</span><span style="color:rgba(255,255,255,0.7)">${esc(m)}</span>
           </span>`).join("");
-        return `<div class="card exp-item fade-in" style="padding:16px;margin-bottom:10px">
+        return `<div class="card exp-card fade-in">
           <div style="display:flex;justify-content:space-between;align-items:flex-start">
             <div style="flex:1;min-width:0;padding-right:10px">
               <div style="font-weight:600;font-size:16px;margin-bottom:4px">${esc(e.description)}</div>
@@ -237,8 +432,8 @@
                 <span style="font-size:12px;color:rgba(255,255,255,0.5)">📅 ${e.date}</span>
               </div>
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                <div class="tag" style="background:${color(e.payer)}33;border:1px solid ${color(e.payer)}44">
-                  <span style="color:${color(e.payer)};font-size:11px">●</span>
+                <div class="tag" style="background:${clr(e.payer)}33;border:1px solid ${clr(e.payer)}44">
+                  <span style="color:${clr(e.payer)};font-size:11px">●</span>
                   <span style="color:#fff;font-size:12px">${esc(e.payer)} จ่าย</span>
                 </div>
                 <span style="font-size:12px;color:rgba(255,255,255,0.4)">แบ่ง ${(e.splitWith||[]).length} คน</span>
@@ -246,131 +441,60 @@
             </div>
             <div style="text-align:right;flex-shrink:0">
               <div style="font-size:18px;font-weight:700;color:#FFEAA7">${fmt(e.amount)}</div>
-              <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">${fmt(e.amount/(e.splitWith||[1]).length)}/คน</div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">${fmt(e.amount/Math.max(1,(e.splitWith||[]).length))}/คน</div>
               <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end">
-                <button class="edit-btn" data-id="${escA(eid)}" style="background:rgba(100,150,255,0.15);border:1px solid rgba(100,150,255,0.25);color:#85C1E9;font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:inherit">แก้ไข</button>
-                <button class="del-btn"  data-id="${escA(eid)}" style="background:rgba(255,80,80,0.15);border:1px solid rgba(255,80,80,0.2);color:#FF6B6B;font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:inherit">ลบ</button>
+                <button class="btn-sm edit-btn" data-id="${escA(eid)}" style="background:rgba(100,150,255,0.15);border-color:rgba(100,150,255,0.25);color:#85C1E9">แก้ไข</button>
+                <button class="btn-sm del-btn"  data-id="${escA(eid)}" style="background:rgba(255,80,80,0.15);border-color:rgba(255,80,80,0.2);color:#FF6B6B">ลบ</button>
               </div>
             </div>
           </div>
           <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">${chips}</div>
         </div>`;
       }).join("");
-
-      q("expense-list").querySelectorAll(".edit-btn").forEach(btn =>
-        btn.addEventListener("click", () => openForm(btn.dataset.id)));
-      q("expense-list").querySelectorAll(".del-btn").forEach(btn =>
-        btn.addEventListener("click", () => deleteExpense(btn.dataset.id)));
+      q("expense-list").querySelectorAll(".edit-btn").forEach(btn=>btn.addEventListener("click",()=>openExpForm(btn.dataset.id)));
+      q("expense-list").querySelectorAll(".del-btn").forEach(btn=>btn.addEventListener("click",()=>deleteExpense(btn.dataset.id)));
     }
 
     async function deleteExpense(eid) {
       if (!confirm("ลบรายการนี้?")) return;
-      await remove(ref(db, `trips/${currentTripId}/expenses/${eid}`));
+      await remove(ref(db,`trips/${currentTripId}/expenses/${eid}`));
       toast("ลบรายการแล้ว");
     }
 
-    // ─── summary ─────────────────────────────────────────────────
-    function showSummary() {
-      q("summary-panel").classList.add("open");
-      renderSummary();
-    }
-    function hideSummary() { q("summary-panel").classList.remove("open"); }
-
-    function calcSettlement() {
-      const bal = {};
-      members.forEach(m => bal[m] = 0);
-      Object.values(currentExpenses).forEach(({ payer, amount, splitWith }) => {
-        if (!splitWith || !splitWith.length) return;
-        const s = amount / splitWith.length;
-        if (bal[payer] !== undefined) bal[payer] += amount;
-        splitWith.forEach(m => { if (bal[m] !== undefined) bal[m] -= s; });
-      });
-      const cred = [], debt = [];
-      Object.entries(bal).forEach(([n, a]) => {
-        if (a >  0.005) cred.push({name:n,amt:a});
-        if (a < -0.005) debt.push({name:n,amt:-a});
-      });
-      const tx = []; let ci=0, di=0;
-      const c = cred.map(x=>({...x})), d = debt.map(x=>({...x}));
-      while (ci<c.length && di<d.length) {
-        const a = Math.min(c[ci].amt, d[di].amt);
-        tx.push({from:d[di].name, to:c[ci].name, amount:a});
-        c[ci].amt -= a; d[di].amt -= a;
-        if (c[ci].amt < 0.005) ci++;
-        if (d[di].amt < 0.005) di++;
-      }
-      return { balance: bal, transactions: tx };
-    }
-
-    function renderSummary() {
-      const { balance, transactions } = calcSettlement();
-      const total = Object.values(currentExpenses).reduce((s,e)=>s+e.amount,0);
-      q("summary-grand-total").textContent = fmt(total);
-      q("summary-members").innerHTML = members.map(m => {
-        const paid = Object.values(currentExpenses).filter(e=>e.payer===m).reduce((s,e)=>s+e.amount,0);
-        const owe  = Object.values(currentExpenses).reduce((s,e)=>(e.splitWith||[]).includes(m)?s+e.amount/(e.splitWith||[1]).length:s,0);
-        const net  = balance[m];
-        return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
-          <div style="width:36px;height:36px;border-radius:18px;background:${color(m)}33;border:2px solid ${color(m)};display:flex;align-items:center;justify-content:center;font-weight:700;color:${color(m)};font-size:14px;flex-shrink:0">${esc(m[0])}</div>
-          <div style="flex:1"><div style="font-weight:600;margin-bottom:2px">${esc(m)}</div><div style="font-size:12px;color:rgba(255,255,255,0.45)">จ่าย ${fmt(paid)} · ควรจ่าย ${fmt(owe)}</div></div>
-          <div style="text-align:right">
-            <div style="font-weight:700;font-size:16px;color:${net>=0?"#4ECDC4":"#FF6B6B"}">${net>=0?"+"+fmt(net):"-"+fmt(-net)}</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.4)">${net>=0?"ได้คืน":"ต้องจ่าย"}</div>
-          </div>
-        </div>`;
-      }).join("");
-
-      q("summary-transactions").innerHTML = transactions.length === 0
-        ? `<div style="text-align:center;padding:20px 0;color:rgba(255,255,255,0.4)">🎉 ทุกคนจ่ายเท่ากัน!</div>`
-        : transactions.map((t,i) => `
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 0;border-bottom:${i<transactions.length-1?"1px solid rgba(255,255,255,0.06)":"none"}">
-            <div class="tag" style="background:${color(t.from)}22;border:1px solid ${color(t.from)}33"><span style="color:${color(t.from)}">●</span>${esc(t.from)}</div>
-            <span style="color:rgba(255,255,255,0.4);font-size:12px">โอน</span>
-            <span style="font-weight:700;color:#FFEAA7">${fmt(t.amount)}</span>
-            <span style="color:rgba(255,255,255,0.4);font-size:12px">ให้</span>
-            <div class="tag" style="background:${color(t.to)}22;border:1px solid ${color(t.to)}33"><span style="color:${color(t.to)}">●</span>${esc(t.to)}</div>
-          </div>`).join("");
-    }
-
-    // ─── expense form ─────────────────────────────────────────────
-    let formSplitWith = [];
-    let formPayer     = "";
-
-    function openForm(eid = null) {
-      editingExpId = eid;
-      const e = eid ? currentExpenses[eid] : null;
+    /* ── expense form ───────────────────────────────────────────── */
+    function openExpForm(eid=null) {
+      editingExpId  = eid;
+      const e       = eid ? currentExpenses[eid] : null;
       formPayer     = e ? e.payer     : (members[0]||"");
       formSplitWith = e ? [...(e.splitWith||[])] : [...members];
-      q("f-desc").value   = e ? e.description : "";
+      q("f-desc").value   = e ? e.description  : "";
       q("f-loc").value    = e ? (e.location||"") : "";
-      q("f-amount").value = e ? e.amount : "";
-      q("f-date").value   = e ? e.date   : today();
+      q("f-amount").value = e ? e.amount        : "";
+      q("f-date").value   = e ? e.date          : today();
       q("form-title").textContent = eid ? "✏️ แก้ไขรายการ" : "➕ เพิ่มรายการ";
       renderFormChips();
       q("exp-modal").classList.add("open");
     }
-    function closeForm() { q("exp-modal").classList.remove("open"); editingExpId = null; }
+    function closeExpForm() { q("exp-modal").classList.remove("open"); editingExpId=null; }
 
     function renderFormChips() {
       const amt = parseFloat(q("f-amount").value)||0;
-      const pp  = formSplitWith.length > 0 ? amt / formSplitWith.length : 0;
+      const pp  = formSplitWith.length>0 ? amt/formSplitWith.length : 0;
       q("split-label").textContent = `👥 แบ่งจ่ายกับ (${formSplitWith.length} คน${amt&&pp?" · "+fmt(pp)+"/คน":""})`;
-
-      q("payer-chips").innerHTML = members.map(m => {
-        const sel = formPayer === m;
-        return `<div class="chip" data-payer="${escA(m)}" style="background:${sel?color(m)+"33":"rgba(255,255,255,0.05)"};border-color:${sel?color(m):"rgba(255,255,255,0.12)"};color:${sel?color(m):"rgba(255,255,255,0.7)"};font-weight:${sel?700:400}">${esc(m)}</div>`;
+      q("payer-chips").innerHTML = members.map(m=>{
+        const s=formPayer===m;
+        return `<div class="chip" data-payer="${escA(m)}" style="background:${s?clr(m)+"33":"rgba(255,255,255,0.05)"};border-color:${s?clr(m):"rgba(255,255,255,0.12)"};color:${s?clr(m):"rgba(255,255,255,0.7)"};font-weight:${s?700:400}">${esc(m)}</div>`;
       }).join("");
-      q("payer-chips").querySelectorAll("[data-payer]").forEach(el =>
-        el.addEventListener("click", () => { formPayer = el.dataset.payer; renderFormChips(); }));
-
-      q("split-chips").innerHTML = members.map(m => {
-        const sel = formSplitWith.includes(m);
-        return `<div class="chip" data-split="${escA(m)}" style="background:${sel?color(m)+"33":"rgba(255,255,255,0.05)"};border-color:${sel?color(m):"rgba(255,255,255,0.12)"};color:${sel?color(m):"rgba(255,255,255,0.7)"};font-weight:${sel?700:400}">${sel?"✓ ":""}${esc(m)}</div>`;
+      q("payer-chips").querySelectorAll("[data-payer]").forEach(el=>
+        el.addEventListener("click",()=>{formPayer=el.dataset.payer;renderFormChips();}));
+      q("split-chips").innerHTML = members.map(m=>{
+        const s=formSplitWith.includes(m);
+        return `<div class="chip" data-split="${escA(m)}" style="background:${s?clr(m)+"33":"rgba(255,255,255,0.05)"};border-color:${s?clr(m):"rgba(255,255,255,0.12)"};color:${s?clr(m):"rgba(255,255,255,0.7)"};font-weight:${s?700:400}">${s?"✓ ":""}${esc(m)}</div>`;
       }).join("");
-      q("split-chips").querySelectorAll("[data-split]").forEach(el =>
-        el.addEventListener("click", () => {
-          const m = el.dataset.split;
-          formSplitWith.includes(m) ? formSplitWith.splice(formSplitWith.indexOf(m),1) : formSplitWith.push(m);
+      q("split-chips").querySelectorAll("[data-split]").forEach(el=>
+        el.addEventListener("click",()=>{
+          const m=el.dataset.split;
+          formSplitWith.includes(m)?formSplitWith.splice(formSplitWith.indexOf(m),1):formSplitWith.push(m);
           renderFormChips();
         }));
       updateSaveBtn();
@@ -383,206 +507,190 @@
     }
 
     async function saveExpense() {
-      const desc = q("f-desc").value.trim();
-      const amt  = parseFloat(q("f-amount").value);
-      if (!desc||!amt||!formPayer||formSplitWith.length===0) { toast("กรุณากรอกข้อมูลให้ครบ"); return; }
-      const data = { description:desc, location:q("f-loc").value.trim(), amount:amt,
-                     date:q("f-date").value, payer:formPayer, splitWith:formSplitWith,
-                     createdAt: editingExpId ? (currentExpenses[editingExpId]?.createdAt||Date.now()) : Date.now(),
-                     updatedAt: Date.now() };
-      if (editingExpId) {
-        await update(ref(db, `trips/${currentTripId}/expenses/${editingExpId}`), data);
+      const desc=q("f-desc").value.trim(), amt=parseFloat(q("f-amount").value);
+      if(!desc||!amt||!formPayer||!formSplitWith.length){toast("กรุณากรอกข้อมูลให้ครบ");return;}
+      const data={description:desc,location:q("f-loc").value.trim(),amount:amt,
+                  date:q("f-date").value,payer:formPayer,splitWith:formSplitWith,
+                  createdAt:editingExpId?(currentExpenses[editingExpId]?.createdAt||Date.now()):Date.now(),
+                  updatedAt:Date.now()};
+      if(editingExpId){
+        await update(ref(db,`trips/${currentTripId}/expenses/${editingExpId}`),data);
         toast("แก้ไขแล้ว ✓");
       } else {
-        await push(ref(db, `trips/${currentTripId}/expenses`), data);
+        await push(ref(db,`trips/${currentTripId}/expenses`),data);
         toast("บันทึกแล้ว ✓");
       }
-      closeForm();
+      closeExpForm();
     }
 
-    // ════════════════════════════════════════════════════════════
-    //  SHELL RENDERER — สร้าง DOM ตาม screen
-    // ════════════════════════════════════════════════════════════
-    function renderShell(screen) {
-      if (screen === "home") {
-        document.body.innerHTML = buildHomeHTML();
-        bindCreateTrip();
+    /* ── summary ────────────────────────────────────────────────── */
+    function calcSettlement() {
+      const bal={};
+      members.forEach(m=>bal[m]=0);
+      Object.values(currentExpenses).forEach(({payer,amount,splitWith})=>{
+        if(!splitWith?.length)return;
+        const s=amount/splitWith.length;
+        if(bal[payer]!==undefined)bal[payer]+=amount;
+        splitWith.forEach(m=>{if(bal[m]!==undefined)bal[m]-=s;});
+      });
+      const cred=[],debt=[];
+      Object.entries(bal).forEach(([n,a])=>{
+        if(a>0.005)cred.push({name:n,amt:a});
+        if(a<-0.005)debt.push({name:n,amt:-a});
+      });
+      const tx=[],c=cred.map(x=>({...x})),d=debt.map(x=>({...x}));
+      let ci=0,di=0;
+      while(ci<c.length&&di<d.length){
+        const a=Math.min(c[ci].amt,d[di].amt);
+        tx.push({from:d[di].name,to:c[ci].name,amount:a});
+        c[ci].amt-=a;d[di].amt-=a;
+        if(c[ci].amt<0.005)ci++;if(d[di].amt<0.005)di++;
+      }
+      return{balance:bal,transactions:tx};
+    }
+
+    function renderSummary() {
+      const{balance,transactions}=calcSettlement();
+      const total=Object.values(currentExpenses).reduce((s,e)=>s+e.amount,0);
+      q("summary-grand-total").textContent=fmt(total);
+      q("summary-members").innerHTML=members.map(m=>{
+        const paid=Object.values(currentExpenses).filter(e=>e.payer===m).reduce((s,e)=>s+e.amount,0);
+        const owe=Object.values(currentExpenses).reduce((s,e)=>(e.splitWith||[]).includes(m)?s+e.amount/Math.max(1,(e.splitWith||[]).length):s,0);
+        const net=balance[m];
+        return `<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
+          <div style="width:36px;height:36px;border-radius:18px;background:${clr(m)}33;border:2px solid ${clr(m)};display:flex;align-items:center;justify-content:center;font-weight:700;color:${clr(m)};font-size:14px;flex-shrink:0">${esc(m[0])}</div>
+          <div style="flex:1"><div style="font-weight:600;margin-bottom:2px">${esc(m)}</div><div style="font-size:12px;color:rgba(255,255,255,0.45)">จ่าย ${fmt(paid)} · ควรจ่าย ${fmt(owe)}</div></div>
+          <div style="text-align:right">
+            <div style="font-weight:700;font-size:16px;color:${net>=0?"#4ECDC4":"#FF6B6B"}">${net>=0?"+"+fmt(net):"-"+fmt(-net)}</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.4)">${net>=0?"ได้คืน":"ต้องจ่าย"}</div>
+          </div>
+        </div>`;
+      }).join("");
+      q("summary-transactions").innerHTML=transactions.length===0
+        ?`<div style="text-align:center;padding:20px 0;color:rgba(255,255,255,0.4)">🎉 ทุกคนจ่ายเท่ากัน!</div>`
+        :transactions.map((t,i)=>`
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 0;border-bottom:${i<transactions.length-1?"1px solid rgba(255,255,255,0.06)":"none"}">
+            <div class="tag" style="background:${clr(t.from)}22;border:1px solid ${clr(t.from)}33"><span style="color:${clr(t.from)}">●</span>${esc(t.from)}</div>
+            <span style="color:rgba(255,255,255,0.4);font-size:12px">โอน</span>
+            <span style="font-weight:700;color:#FFEAA7">${fmt(t.amount)}</span>
+            <span style="color:rgba(255,255,255,0.4);font-size:12px">ให้</span>
+            <div class="tag" style="background:${clr(t.to)}22;border:1px solid ${clr(t.to)}33"><span style="color:${clr(t.to)}">●</span>${esc(t.to)}</div>
+          </div>`).join("");
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       CREATE TRIP
+    ══════════════════════════════════════════════════════════════ */
+    function createTripFormHTML() {
+      return `
+        <div style="margin-bottom:14px">
+          <label class="lbl">🗺️ ชื่อทริป *</label>
+          <input id="new-trip-name" class="inp" placeholder="เช่น เที่ยวญี่ปุ่น 2025" />
+        </div>
+        <div style="margin-bottom:14px">
+          <label class="lbl" id="new-member-lbl">👥 สมาชิก (0 คน)</label>
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <input id="new-member-input" class="inp" placeholder="ชื่อ..." style="flex:1" />
+            <button id="new-member-add-btn" style="background:linear-gradient(135deg,#4facfe,#00f2fe);color:#fff;padding:10px 18px;border-radius:10px;font-size:20px;font-weight:700;border:none;cursor:pointer">+</button>
+          </div>
+          <div id="new-members-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+        </div>
+        <button id="save-trip-btn" style="width:100%;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:15px;border-radius:14px;font-size:16px;font-weight:700;border:none;cursor:pointer;font-family:inherit">สร้างทริป 🚀</button>`;
+    }
+
+    function showCreateModal(standalone=false) {
+      if (standalone) {
+        // สร้าง modal ลอยกลางหน้าจอสำหรับหน้า no-link
+        const overlay = document.createElement("div");
+        overlay.className = "modal-overlay open";
+        overlay.innerHTML = `<div class="modal-box">${createModalInner()}</div>`;
+        document.body.appendChild(overlay);
+        overlay.addEventListener("click", e=>{ if(e.target===overlay) overlay.remove(); });
+        overlay.querySelector("#create-modal-close").addEventListener("click",()=>overlay.remove());
+        newTripMembers=[];
+        bindCreateTripFormIn(overlay);
       } else {
-        document.body.innerHTML = buildTripHTML();
-        q("back-btn").addEventListener("click",       () => { location.hash = ""; });
-        q("share-btn").addEventListener("click",      () => {
-          const url = location.href;
-          if(navigator.share){ navigator.share({title:"Bang Kee Tour – "+currentTripData.name,url}); }
-          else{ navigator.clipboard.writeText(url).then(()=>toast("คัดลอก link แล้ว 🔗")); }
-        });
-        q("summary-btn").addEventListener("click",    showSummary);
-        q("summary-close").addEventListener("click",  hideSummary);
-        q("fab-add").addEventListener("click",        () => openForm());
-        q("exp-modal").addEventListener("click",      e => { if(e.target===q("exp-modal"))closeForm(); });
-        q("exp-modal-close").addEventListener("click",closeForm);
-        q("f-desc").addEventListener("input",         updateSaveBtn);
-        q("f-amount").addEventListener("input",       () => renderFormChips());
-        q("save-exp-btn").addEventListener("click",   saveExpense);
+        newTripMembers=[];
+        q("new-trip-name").value="";
+        q("new-members-list").innerHTML="";
+        q("new-member-input").value="";
+        renderNewMembers();
+        q("create-modal").classList.add("open");
       }
     }
 
-    // ─── toast ───────────────────────────────────────────────────
+    function createModalInner() {
+      return `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <h3 style="font-size:18px;font-weight:700">🗺️ สร้างทริปใหม่</h3>
+          <button id="create-modal-close" style="background:rgba(255,255,255,0.1);border:none;color:#fff;width:32px;height:32px;border-radius:16px;cursor:pointer;font-size:18px;font-family:inherit">×</button>
+        </div>
+        ${createTripFormHTML()}`;
+    }
+
+    function bindCreateTripForm() {
+      bindCreateTripFormIn(document);
+    }
+    function bindCreateTripFormIn(root) {
+      root.getElementById("new-member-add-btn").addEventListener("click", addNewMember);
+      root.getElementById("new-member-input").addEventListener("keydown", e=>{if(e.key==="Enter"){e.preventDefault();addNewMember();}});
+      root.getElementById("save-trip-btn").addEventListener("click", ()=>saveNewTrip(root));
+    }
+
+    function addNewMember() {
+      const n=q("new-member-input").value.trim();
+      if(!n)return;
+      if(newTripMembers.includes(n)){toast("มีชื่อนี้แล้ว");return;}
+      newTripMembers.push(n);
+      q("new-member-input").value="";
+      renderNewMembers();
+    }
+
+    function renderNewMembers() {
+      const lbl=q("new-member-lbl");
+      if(lbl)lbl.textContent=`👥 สมาชิก (${newTripMembers.length} คน)`;
+      const list=q("new-members-list");
+      if(!list)return;
+      list.innerHTML=newTripMembers.map((m,i)=>
+        `<div class="tag" style="background:${COLORS[i%COLORS.length]}33;border:1px solid ${COLORS[i%COLORS.length]}55">
+          <span style="color:${COLORS[i%COLORS.length]}">●</span>${esc(m)}
+          <span data-rm="${escA(m)}" style="cursor:pointer;color:rgba(255,255,255,0.4);font-size:18px;line-height:1">×</span>
+        </div>`).join("");
+      list.querySelectorAll("[data-rm]").forEach(el=>
+        el.addEventListener("click",function(){newTripMembers=newTripMembers.filter(x=>x!==this.dataset.rm);renderNewMembers();}));
+    }
+
+    async function saveNewTrip(root=document) {
+      const name=(root.getElementById("new-trip-name")||q("new-trip-name")).value.trim();
+      if(!name){toast("กรุณาใส่ชื่อทริป");return;}
+      if(newTripMembers.length<2){toast("ต้องมีสมาชิกอย่างน้อย 2 คน");return;}
+      const tripRef=push(ref(db,"trips"));
+      const membObj={};
+      newTripMembers.forEach((m,i)=>membObj[`m${i}`]=m);
+      await set(tripRef,{name,members:membObj,createdAt:Date.now()});
+      // ปิด modal
+      const cm=q("create-modal");
+      if(cm)cm.classList.remove("open");
+      const overlays=document.querySelectorAll(".modal-overlay.open");
+      overlays.forEach(o=>{ if(o.id!=="exp-modal"&&o.id!=="summary-panel") o.classList.remove("open"); });
+      toast("สร้างทริปแล้ว 🎉");
+      // แชร์ link ทันที
+      const newUrl=`${location.origin}${location.pathname}#trip/${tripRef.key}`;
+      setTimeout(()=>{
+        if(navigator.share){navigator.share({title:"Bang Kee Tour – "+name,url:newUrl});}
+        else{navigator.clipboard.writeText(newUrl).then(()=>toast("คัดลอก link แล้ว! แชร์ให้เพื่อนได้เลย 🔗"));}
+        location.hash="#trip/"+tripRef.key;
+      },400);
+    }
+
+    /* ── toast ──────────────────────────────────────────────────── */
     function toast(msg) {
-      let t = document.getElementById("_toast");
-      if (!t) { t=document.createElement("div"); t.id="_toast"; document.body.appendChild(t); }
-      t.textContent = msg; t.className = "toast show";
-      clearTimeout(t._timer);
-      t._timer = setTimeout(()=>t.classList.remove("show"), 2200);
+      let t=document.getElementById("_toast");
+      if(!t){t=document.createElement("div");t.id="_toast";t.className="toast";document.body.appendChild(t);}
+      t.textContent=msg;t.classList.add("show");
+      clearTimeout(t._tmr);t._tmr=setTimeout(()=>t.classList.remove("show"),2500);
     }
 
-    // ─── HTML builders ───────────────────────────────────────────
-    function buildHomeHTML() {
-      return `
-      ${STYLES}
-      <div id="header">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:26px">✈️</span>
-          <div style="font-size:18px;font-weight:700;font-family:'Prompt',sans-serif">Bang Kee Tour</div>
-        </div>
-        <button id="create-trip-btn" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:8px 16px;border-radius:10px;font-size:14px;font-weight:600;border:none;cursor:pointer;font-family:inherit">+ ทริปใหม่</button>
-      </div>
-      <div id="main">
-        <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-bottom:12px;font-weight:600;letter-spacing:0.5px">ทริปทั้งหมด</div>
-        <div id="trip-list"></div>
-      </div>
-
-      <!-- Create Trip Modal -->
-      <div id="create-modal" class="modal-overlay">
-        <div id="create-modal-bg" style="position:absolute;inset:0;cursor:pointer"></div>
-        <div style="position:relative;width:100%;max-width:480px;margin:0 auto;max-height:90vh;overflow-y:auto;background:linear-gradient(180deg,#1a1a2e,#16213e);border-top:1px solid rgba(255,255,255,0.1);border-radius:20px 20px 0 0;padding:24px 20px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));animation:slideUp 0.3s ease">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-            <h3 style="font-size:18px;font-weight:700">🗺️ สร้างทริปใหม่</h3>
-            <button id="create-modal-close" style="background:rgba(255,255,255,0.1);border:none;color:#fff;width:32px;height:32px;border-radius:16px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;font-family:inherit">×</button>
-          </div>
-          <div style="margin-bottom:14px">
-            <label class="lbl">🗺️ ชื่อทริป *</label>
-            <input id="new-trip-name" class="inp" placeholder="เช่น เที่ยวญี่ปุ่น 2025" />
-          </div>
-          <div style="margin-bottom:14px">
-            <label class="lbl" id="new-member-lbl">👥 สมาชิก (0 คน)</label>
-            <div style="display:flex;gap:8px;margin-bottom:10px">
-              <input id="new-member-input" class="inp" placeholder="ชื่อ..." style="flex:1" />
-              <button id="new-member-add-btn" style="background:linear-gradient(135deg,#4facfe,#00f2fe);color:#fff;padding:10px 18px;border-radius:10px;font-size:20px;font-weight:700;border:none;cursor:pointer">+</button>
-            </div>
-            <div id="new-members-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
-          </div>
-          <button id="save-trip-btn" style="width:100%;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:15px;border-radius:14px;font-size:16px;font-weight:700;border:none;cursor:pointer;font-family:inherit">สร้างทริป 🚀</button>
-        </div>
-      </div>
-      <div id="_toast" class="toast"></div>`;
-    }
-
-    function buildTripHTML() {
-      const name = currentTripData?.name || "";
-      return `
-      ${STYLES}
-      <div id="header">
-        <div style="display:flex;align-items:center;gap:8px">
-          <button id="back-btn" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:#fff;width:34px;height:34px;border-radius:10px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit">←</button>
-          <div>
-            <div style="font-size:16px;font-weight:700;font-family:'Prompt',sans-serif;line-height:1.2">${esc(name)}</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.45)">${members.length} คน · ${members.map(m=>esc(m)).join(", ")}</div>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button id="share-btn" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:7px 12px;border-radius:10px;font-size:13px;cursor:pointer;font-family:inherit">🔗 แชร์</button>
-          <button id="summary-btn" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:7px 14px;border-radius:10px;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:inherit">สรุป 📊</button>
-        </div>
-      </div>
-      <div id="main">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
-          <div class="card" style="padding:16px;text-align:center">
-            <div id="stat-total" style="font-size:20px;font-weight:700;color:#4ECDC4">฿0.00</div>
-            <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:2px">ยอดรวมทั้งหมด</div>
-          </div>
-          <div class="card" style="padding:16px;text-align:center">
-            <div id="stat-count" style="font-size:20px;font-weight:700;color:#FF6B6B">0</div>
-            <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:2px">รายการ</div>
-          </div>
-        </div>
-        <div id="expense-list"></div>
-        <button id="fab-add" class="fab">+</button>
-      </div>
-
-      <!-- Summary Panel -->
-      <div id="summary-panel" class="modal-overlay">
-        <div style="width:100%;max-width:480px;margin:0 auto;max-height:90vh;overflow-y:auto;background:linear-gradient(180deg,#1a1a2e,#16213e);border-top:1px solid rgba(255,255,255,0.1);border-radius:20px 20px 0 0;padding:24px 20px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));animation:slideUp 0.3s ease">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-            <h3 style="font-size:18px;font-weight:700">📊 สรุปค่าใช้จ่าย</h3>
-            <button id="summary-close" style="background:rgba(255,255,255,0.1);border:none;color:#fff;width:32px;height:32px;border-radius:16px;cursor:pointer;font-size:18px;font-family:inherit">×</button>
-          </div>
-          <div class="card" style="padding:20px;margin-bottom:14px">
-            <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:12px">ยอดของแต่ละคน</div>
-            <div id="summary-members"></div>
-          </div>
-          <div class="card" style="padding:20px;margin-bottom:14px">
-            <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:12px">💸 สรุปการโอนเงิน</div>
-            <div id="summary-transactions"></div>
-          </div>
-          <div class="card" style="padding:16px;text-align:center;background:rgba(102,126,234,0.1);border-color:rgba(102,126,234,0.3)">
-            <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:4px">ยอดรวมทั้งทริป</div>
-            <div id="summary-grand-total" style="font-size:28px;font-weight:700;color:#FFEAA7">฿0.00</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Expense Form Modal -->
-      <div id="exp-modal" class="modal-overlay">
-        <div style="width:100%;max-width:480px;margin:0 auto;max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch;background:linear-gradient(180deg,#1a1a2e,#16213e);border-top:1px solid rgba(255,255,255,0.1);border-radius:20px 20px 0 0;padding:24px 20px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));animation:slideUp 0.3s ease">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-            <h3 id="form-title" style="font-size:18px;font-weight:700">➕ เพิ่มรายการ</h3>
-            <button id="exp-modal-close" style="background:rgba(255,255,255,0.1);border:none;color:#fff;width:32px;height:32px;border-radius:16px;cursor:pointer;font-size:18px;font-family:inherit">×</button>
-          </div>
-          <div style="margin-bottom:14px"><label class="lbl">📝 รายการ *</label><input id="f-desc" class="inp" placeholder="เช่น ข้าวเที่ยง, ตั๋ว" /></div>
-          <div style="margin-bottom:14px"><label class="lbl">📍 สถานที่</label><input id="f-loc" class="inp" placeholder="เช่น Osaka" /></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-            <div><label class="lbl">💰 จำนวนเงิน (฿) *</label><input id="f-amount" class="inp" type="number" inputmode="decimal" placeholder="0.00" style="font-size:16px;font-weight:700" /></div>
-            <div><label class="lbl">📅 วันที่</label><input id="f-date" class="inp" type="date" style="font-size:14px" /></div>
-          </div>
-          <div style="margin-bottom:14px"><label class="lbl">👤 คนจ่าย *</label><div id="payer-chips" style="display:flex;flex-wrap:wrap;margin:-4px"></div></div>
-          <div style="margin-bottom:20px"><label class="lbl" id="split-label">👥 แบ่งจ่ายกับ</label><div id="split-chips" style="display:flex;flex-wrap:wrap;margin:-4px"></div></div>
-          <button id="save-exp-btn" style="width:100%;background:rgba(255,255,255,0.1);color:#fff;padding:15px;border-radius:14px;font-size:16px;font-weight:700;border:none;cursor:pointer;opacity:0.5;font-family:inherit">บันทึก ✓</button>
-        </div>
-      </div>
-      <div id="_toast" class="toast"></div>`;
-    }
-
-    const STYLES = `
-    <style>
-      *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-      body{font-family:'Sarabun','Prompt',sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);min-height:100vh;color:#fff;overscroll-behavior:none;}
-      @supports(-webkit-touch-callout:none){body{min-height:-webkit-fill-available;}}
-      input,button{font-family:inherit;outline:none;-webkit-appearance:none;}
-      input[type="date"]{color-scheme:dark;}
-      .card{background:rgba(255,255,255,0.07);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.1);border-radius:16px;}
-      .tag{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600;}
-      .chip{display:inline-flex;align-items:center;padding:8px 14px;border-radius:10px;font-size:14px;border:1.5px solid;margin:4px;cursor:pointer;transition:all 0.15s;}
-      .chip:active{opacity:0.75;}
-      .fade-in{animation:fadeIn 0.3s ease;}
-      @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-      @keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
-      #header{background:rgba(0,0,0,0.3);border-bottom:1px solid rgba(255,255,255,0.08);padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top,0px));display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);}
-      #main{max-width:480px;margin:0 auto;padding:16px 16px 120px;}
-      .inp{width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:10px;padding:12px 14px;color:#fff;font-size:16px;font-family:inherit;}
-      .inp::placeholder{color:rgba(255,255,255,0.3);}
-      label.lbl{font-size:12px;color:rgba(255,255,255,0.55);display:block;margin-bottom:7px;}
-      .fab{position:fixed;bottom:calc(28px + env(safe-area-inset-bottom,0px));right:24px;background:linear-gradient(135deg,#667eea,#764ba2);width:62px;height:62px;border-radius:31px;font-size:30px;color:#fff;box-shadow:0 8px 32px rgba(102,126,234,0.55);display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;}
-      .fab:active{transform:scale(0.93);}
-      .empty-state{padding:40px;text-align:center;}
-      .trip-card{padding:16px;margin-bottom:12px;cursor:pointer;transition:all 0.15s;}
-      .trip-card:active{opacity:0.8;transform:scale(0.99);}
-      .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);align-items:flex-end;z-index:200;}
-      .modal-overlay.open{display:flex;}
-      .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(40,40,80,0.95);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;opacity:0;transition:all 0.3s;pointer-events:none;z-index:999;white-space:nowrap;}
-      .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-    </style>`;
-
-    // kick off
     route();
   </script>
 </head>
